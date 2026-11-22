@@ -1,38 +1,50 @@
-export type TabId =
-  | "match"
-  | "scorecard"
-  | "money"
-  | "chat"
-  | "locations"
-  | "bot"
-  | "mandir";
+export type TabId = "match" | "stats" | "money" | "hub" | "bot" | "mandir";
 
 export type PlayerRole = "Batter" | "Bowler" | "All-Rounder" | "Wicket-Keeper";
 
-export interface Player {
+export interface SquadAccount {
   id: string;
   fullName: string;
-  nickname?: string;
+  nickname: string;
+  jerseyNumber: number;
   role: PlayerRole;
+  skillTag: string;
+  isAdmin: boolean;
+  hasGM: boolean;
+  adminPassword?: string; // Permanently locked, cannot be changed
+  defaultNormalPassword: string; // Changeable by player
+}
+
+export interface PlayerStats {
+  id: string;
+  fullName: string;
+  nickname: string;
+  jerseyNumber: number;
+  role: PlayerRole;
+  skillTag: string;
   matches: number;
   runs: number;
   ballsFaced: number;
   fours: number;
   sixes: number;
+  ducks: number;
   wickets: number;
   ballsBowled: number;
   runsConceded: number;
+  attendanceStreak: number;
+  recentScores: string[];
 }
 
 export interface GearAssignment {
   id: string;
-  item: string; // e.g., "Wind Balls (2)", "Bats", "Stumps", "Tape", "Water"
-  assignedTo: string; // Full name
+  item: string;
+  assignedTo: string;
   confirmed: boolean;
 }
 
 export interface BallEvent {
   id: string;
+  innings: 1 | 2 | 3; // 3 = Super Over
   over: number;
   ballInOver: number;
   batsmanId: string;
@@ -42,12 +54,13 @@ export interface BallEvent {
   extraType?: "WD" | "NB" | "BYE" | "LB";
   isLegalDelivery: boolean;
   isWicket: boolean;
-  wicketType?: "Bowled" | "Caught" | "Run Out" | "LBW" | "Stumped" | "Hit Wicket";
+  wicketType?: "Bowled" | "Caught" | "Run Out" | "LBW" | "Stumped" | "Retired Hurt";
   outBatterId?: string;
-  label: string; // e.g., "4", "6", "W", "WD+1"
+  label: string;
 }
 
 export interface FallOfWicket {
+  innings: 1 | 2 | 3;
   wicketNumber: number;
   score: number;
   overs: string;
@@ -55,20 +68,35 @@ export interface FallOfWicket {
   wicketType: string;
 }
 
+export interface TeamSplit {
+  teamAName: string;
+  teamBName: string;
+  teamAIds: string[];
+  teamBIds: string[];
+  captainA: string;
+  viceCaptainA: string;
+  captainB: string;
+  viceCaptainB: string;
+}
+
 export interface LiveMatch {
   id: string;
   title: string;
-  opponent: string;
   groundName: string;
-  date: string;
-  time: string;
+  scheduledISO: string; // Supports creating up to 3 days ahead + countdown
   totalOvers: number;
-  tossWinner?: string;
-  tossDecision?: "Bat" | "Bowl";
+  innings: 1 | 2 | 3; // 3 = Super Over
+  battingTeamName: string;
+  bowlingTeamName: string;
+  firstInningsScore?: number;
   target?: number;
   runs: number;
   wickets: number;
   legalBalls: number;
+  isFreeHit: boolean;
+  tossWinner?: string;
+  tossDecision?: "Bat" | "Bowl";
+  teamSplit?: TeamSplit;
   extras: {
     wides: number;
     noBalls: number;
@@ -84,6 +112,8 @@ export interface LiveMatch {
   gearList: GearAssignment[];
   status: "upcoming" | "live" | "completed";
   winnerText?: string;
+  mvpName?: string;
+  mvpPoints?: number;
 }
 
 export interface MoneyEntry {
@@ -134,7 +164,6 @@ export interface CustomQA {
   answer: string;
 }
 
-/* Secret Ganesh Mandir Tab Data */
 export interface MandirSchedule {
   id: string;
   dayLabel: string;
@@ -177,7 +206,9 @@ export interface MandirData {
 export interface ClubState {
   clubName: string;
   tagline: string;
-  players: Player[];
+  players: PlayerStats[];
+  customPasswords: Record<string, string>; // Only stores changed Normal passwords
+  advanceCredits: Record<string, number>; // Player fullName -> Advance credit ₹
   activeMatch: LiveMatch | null;
   matchHistory: LiveMatch[];
   money: MoneyEntry[];
@@ -190,4 +221,3 @@ export interface ClubState {
   mandir: MandirData;
   lastUpdated: string;
 }
-
