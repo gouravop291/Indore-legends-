@@ -629,8 +629,9 @@ return DEFAULT_STATE;
 }
 
 function uid(prefix: string): string {
-return ${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 }
+
 
 function nowTime(): string {
 return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
