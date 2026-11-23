@@ -837,18 +837,38 @@ const sched = new Date();
 sched.setDate(sched.getDate() + creatorDayOffset);
 const [hh, mm] = creatorTime.split(":").map((n) => Number(n) || 0);
 sched.setHours(hh, mm, 0, 0);
+    const newMatch: LiveMatch = {
+      id: "m-" + Date.now(),
+      title: creatorTitle.trim() || "Desi Turf Clash",
+      groundName: creatorGround || "Desi Turf Limbodi",
+      scheduledISO: sched.toISOString(),
+      totalOvers: creatorOvers,
+      innings: 1,
+      battingTeamName: split?.teamAName || "Indore Legends Gold",
+      bowlingTeamName: split?.teamBName || "Limbodi Thunder",
+      runs: 0,
+      wickets: 0,
+      legalBalls: 0,
+      isFreeHit: false,
+      teamSplit: split || undefined,
+      extras: { wides: 0, noBalls: 0, byes: 0, legByes: 0 },
+      strikerId: teamAIds || "p1",
+      nonStrikerId: teamAIds || "p2",
+      bowlerId: teamBIds || "p13",
+      outPlayerIds: [],
+      timeline: [],
+      fallOfWickets: [],
+      gearList: [
+        { id: "g-latex" + Date.now() + "-1", item: "Wind Balls (2)", assignedTo: "Gaurav Lalwani", confirmed: false },
+        { id: "g-latex" + Date.now() + "-2", item: "Bats (2)", assignedTo: "Granth Sharma", confirmed: false },
+        { id: "g-latex" + Date.now() + "-3", item: "Stumps", assignedTo: "Virat Chaudary", confirmed: false },
+        { id: "g-latex" + Date.now() + "-4", item: "Water & Tape", assignedTo: "Aditya Rathore", confirmed: false },
+      ],
+      status: "live",
+    };
 
 const newMatch: LiveMatch = {
-id: m-${Date.now()}, title: creatorTitle.trim() || "Desi Turf Clash", groundName: creatorGround || "Desi Turf Limbodi", scheduledISO: sched.toISOString(), totalOvers: creatorOvers, innings: 1, battingTeamName: split?.teamAName || "Indore Legends Gold", bowlingTeamName: split?.teamBName || "Limbodi Thunder", runs: 0, wickets: 0, legalBalls: 0, isFreeHit: false, teamSplit: split || undefined, extras: { wides: 0, noBalls: 0, byes: 0, legByes: 0 }, strikerId: teamAIds[0] || "p1", nonStrikerId: teamAIds[1] || "p2", bowlerId: teamBIds[0] || "p13", outPlayerIds: [], timeline: [], fallOfWickets: [], gearList: [ { id:g-latex
-{Date.now()}-1`, item: "Wind Balls (2)", assignedTo: "Gaurav Lalwani", confirmed: false }, { id: `g-
-
-{Date.now()}-2, item: "Bats (2)", assignedTo: "Granth Sharma", confirmed: false }, { id:g-latex
-{Date.now()}-3`, item: "Stumps", assignedTo: "Virat Chaudary", confirmed: false }, { id: `g-
-
-{Date.now()}-4`, item: "Water & Tape", assignedTo: "Aditya Rathore", confirmed: false },
-],
-status: "live",
-};
+id: m-${Date.n
 
 updateClub((prev) => ({
 ...prev,
