@@ -638,8 +638,9 @@ return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
 }
 
 function formatOvers(legalBalls: number): string {
-return ``${Math.floor(legalBalls / 6)}.${legalBalls % 6};
+  return `${Math.floor(legalBalls / 6)}.${legalBalls % 6}`;
 }
+
 
 function playerRankScore(p: Player): number {
 return p.runs + p.wickets * 22 + p.sixes * 4;
