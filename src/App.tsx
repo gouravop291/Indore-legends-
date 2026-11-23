@@ -866,10 +866,7 @@ sched.setHours(hh, mm, 0, 0);
       ],
       status: "live",
     };
-
-const newMatch: LiveMatch = {
-id: m-${Date.n
-
+ 
 updateClub((prev) => ({
 ...prev,
 activeMatch: newMatch,
