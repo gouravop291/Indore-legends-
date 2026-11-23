@@ -773,7 +773,6 @@ setCoinFlipping(false);
 showToast("Coin Toss: " + outcome + "!");
 }, 950);
 };
-
 // Auto Team Splitter (Fair Ranking Snake-Draft) + Auto Captain & Vice-Captain Decider
 const generateFairSplitAndCaptains = (randomizeCaptains = false) => {
 if (selectedMatchPlayerIds.length < 4) {
