@@ -714,7 +714,7 @@ const myUnpaid = club.money.filter(
 if (myUnpaid.length > 0) {
 setDuePopupEntries(myUnpaid);
 }
-showToast(Welcome back,${acc.fullName}!`);
+showToast("Welcome back, " + acc.fullName + "!");
 };
 
 const handleLogout = () => {
