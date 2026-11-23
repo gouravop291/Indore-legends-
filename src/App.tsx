@@ -911,8 +911,9 @@ let label = String(runsOffBat);
 if (isWicket) label = isRetired ? "RH" : "W";
 else if (extraType) label = extraType + (totalBallRuns > 1 ? "+" + (totalBallRuns - 1) : "");
 
-const event: BallEvent = {
-id: b-${Date.now()}-${Math.random().toString(36).slice(2, 6)},
+ const event: BallEvent = {
+  id: "b-" + Date.now() + "-" + Math.random().toString(36).slice(2, 6),
+
 innings: m.innings,
 over: overNum,
 ballInOver,
