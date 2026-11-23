@@ -1537,11 +1537,11 @@ resultText: "",
 batters: initBatters,
 bowlers: initBowlers,
 history: [],
-tossInfo: sch.tossWinner
-? ${sch.tossWinner} won toss & chose to ${sch.tossDecision || "BAT"}
-: "Toss skipped",
-captainsInfo: ${sch.teamAName} (C: ${sch.teamACaptain}, VC: ${sch.teamAViceCaptain}) vs ${sch.teamBName} (C: ${sch.teamBCaptain}, VC: ${sch.teamBViceCaptain}),
-};
+      tossInfo: sch.tossWinner
+        ? `${sch.tossWinner} won toss & chose to ${sch.tossDecision || "BAT"}`
+        : "Toss skipped",
+      captainsInfo: `${sch.teamAName} (C: ${sch.teamACaptain}, VC: ${sch.teamAViceCaptain}) vs ${sch.teamBName} (C: ${sch.teamBCaptain}, VC: ${sch.teamBViceCaptain})`,
+
 
 setState((prev) => ({ ...prev, liveMatch: live }));
 setUmpireBanner("PLAY! Innings 1 underway.");
