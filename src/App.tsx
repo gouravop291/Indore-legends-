@@ -770,7 +770,7 @@ setTimeout(() => {
 const outcome = Math.random() < 0.5 ? "HEADS" : "TAILS";
 setCoinResult(outcome);
 setCoinFlipping(false);
-showToast(Coin Toss: ${outcome}!`);
+showToast("Coin Toss: " + outcome + "!");
 }, 950);
 };
 
