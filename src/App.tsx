@@ -749,7 +749,7 @@ r={radius}
 fill="none"
 stroke={slice.color}
 strokeWidth="20"
-strokeDasharray={${dash} ${circumference}}
+                strokeDasharray={`${dash} ${circumference}`}
 strokeDashoffset={offset}
 transform="rotate(-90 74 74)"
 />
