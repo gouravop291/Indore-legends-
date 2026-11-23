@@ -403,7 +403,7 @@ lastUpdated: new Date().toISOString(),
 }
 
 function formatOvers(legalBalls: number): string {
-return ${Math.floor(legalBalls / 6)}.${legalBalls % 6};
+  return Math.floor(legalBalls / 6) + "." + (legalBalls % 6);
 }
 
 function calcRankingScore(p: PlayerStats): number {
