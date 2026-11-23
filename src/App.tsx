@@ -1543,7 +1543,7 @@ history: [],
       captainsInfo: `${sch.teamAName} (C: ${sch.teamACaptain}, VC: ${sch.teamAViceCaptain}) vs ${sch.teamBName} (C: ${sch.teamBCaptain}, VC: ${sch.teamBViceCaptain})`,
 
 
-       setState((prev) => ({ ...prev, liveMatch: live }));
+  setState((prev) => ({ ...prev, liveMatch: live }));
 
 
 
