@@ -909,7 +909,7 @@ const ballInOver = (m.legalBalls % 6) + (isLegal ? 1 : 0);
 
 let label = String(runsOffBat);
 if (isWicket) label = isRetired ? "RH" : "W";
-else if (extraType) label = ${extraType}${totalBallRuns &gt; 1 ?+${totalBallRuns - 1} : ""}`;
+else if (extraType) label = extraType + (totalBallRuns > 1 ? "+" + (totalBallRuns - 1) : "");
 
 const event: BallEvent = {
 id: b-${Date.now()}-${Math.random().toString(36).slice(2, 6)},
