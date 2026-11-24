@@ -1584,7 +1584,8 @@ const topBowl = Object.values(m.bowlers)
 .filter((b) => b.balls > 0)
 .sort((a, b) => b.wickets - a.wickets)
 .slice(0, 3)
-.map((b) => •${b.name}: {b.runs} (${formatOvers(b.balls)} ov))
+.map((b) => "• " + b.name + ": " + b.runs + " (" + formatOvers(b.balls) + ") - " + b.wickets + "W")
+
 .join("\n");
 
 const firstInnLine =
