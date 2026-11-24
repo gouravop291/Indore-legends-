@@ -1577,7 +1577,7 @@ const topBat = Object.values(m.batters)
 .filter((b) => b.balls > 0 || b.out)
 .sort((a, b) => b.runs - a.runs)
 .slice(0, 4)
-.map((b) => • ${b.name}: ${b.runs}(${b.balls}) [4s:${b.fours}, 6s:${b.sixes}]`)
+ .map((b) => "• " + b.name + ": " + b.runs + "(" + b.balls + ") [4s:" + b.fours + ", 6s:" + b.sixes + "]")
 .join("\n");
 
 const topBowl = Object.values(m.bowlers)
