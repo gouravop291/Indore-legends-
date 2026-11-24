@@ -1568,7 +1568,7 @@ bestPts = pts;
 bestName = name;
 }
 });
-return bestPts > 0 ? ${bestName} (${bestPts} MVP pts) : "TBD";
+return bestPts > 0 ? bestName + " (" + bestPts + " MVP pts)" : "TBD";
 };
 
 // Format WhatsApp Scorecard
