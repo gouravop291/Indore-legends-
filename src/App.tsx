@@ -1,1245 +1,927 @@
-import React, { useState, useEffect, useRef } from "react";
+```react
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Home,
-  Trophy,
   Users,
+  Trophy,
+  Calendar,
   Wallet,
-  MessageSquare,
+  BarChart3,
+  Award,
+  Settings,
   Bot,
   Flame,
-  RotateCcw,
-  Plus,
-  Trash2,
-  Volume2,
-  VolumeX,
-  Send,
-  Shield,
-  Award,
-  Clock,
-  CheckCircle,
-  AlertTriangle,
-  Play,
-  Sparkles,
-  Activity,
-  Lock,
+  Bell,
   LogOut,
-  MapPin,
-  Mic,
-  MicOff,
+  Lock,
+  Eye,
+  EyeOff,
+  Shield,
+  ShieldCheck,
+  Crown,
+  Plus,
+  Search,
+  ChevronRight,
+  ChevronDown,
+  X,
+  CheckCircle2,
+  AlertTriangle,
+  RotateCcw,
+  Play,
   Share2,
   Shuffle,
   Coins,
+  Mic,
+  MicOff,
+  Volume2,
+  VolumeX,
+  Send,
+  Sparkles,
+  MessageSquare,
+  MapPin,
+  Clock,
+  Check,
+  TrendingUp,
+  Zap,
+  Star,
+  Receipt,
+  ClipboardCheck,
+  Trash2,
+  Info,
+  MoreHorizontal,
+  ArrowLeftRight,
   Key,
-  Bell,
-  Crown,
-  X,
-} from "lucide-react";
+  RefreshCw
+} from 'lucide-react';
 
-type TabKey = "home" | "match" | "squad" | "treasury" | "chat" | "ai" | "gm";
-type PlayerRole = "Batsman" | "Bowler" | "All-Rounder" | "Wicket-Keeper";
-type LedgerType = "CREDIT" | "FINE" | "EXPENSE" | "ADVANCE";
-type PollChoice = "IN" | "OUT" | "MAYBE";
+// ============================================================================
+// 1. CONSTANTS, CREDENTIALS & THEME CONFIGURATION
+// ============================================================================
+const STORAGE_KEY = 'indore_legends_fresh_zero_v1';
+const ADMIN_PIN = '450718';
 
-interface SpeechRecognitionEventLike {
-  results: {
-    [index: number]: {
-      [index: number]: {
-        transcript: string;
-      };
-    };
+const THEMES = {
+  royal: {
+    id: 'royal',
+    name: 'Royal Blue',
+    orb: 'from-blue-400 via-blue-600 to-indigo-800',
+    accentText: 'text-cyan-400',
+    accentBorder: 'border-cyan-400/35',
+    accentGlow: 'shadow-[0_0_24px_rgba(56,189,248,0.20)]',
+    heroGradient: 'from-[#061233] via-[#0a1d4d] to-[#040919]',
+    cardBg: 'bg-[#0a1636]/82',
+    activePill:
+      'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-slate-950 shadow-[0_0_20px_rgba(251,191,36,0.42)]',
+    chartPrimary: '#38bdf8',
+    chartSecondary: '#fbbf24'
+  },
+  gold: {
+    id: 'gold',
+    name: 'Championship Gold',
+    orb: 'from-amber-300 via-amber-500 to-orange-700',
+    accentText: 'text-amber-400',
+    accentBorder: 'border-amber-400/40',
+    accentGlow: 'shadow-[0_0_24px_rgba(251,191,36,0.22)]',
+    heroGradient: 'from-[#1c1305] via-[#261a08] to-[#070812]',
+    cardBg: 'bg-[#17120b]/85',
+    activePill:
+      'bg-gradient-to-r from-amber-400 via-yellow-300 to-orange-400 text-slate-950 shadow-[0_0_22px_rgba(251,191,36,0.52)]',
+    chartPrimary: '#fbbf24',
+    chartSecondary: '#f97316'
+  },
+  emerald: {
+    id: 'emerald',
+    name: 'Pitch Emerald',
+    orb: 'from-emerald-300 via-emerald-500 to-teal-800',
+    accentText: 'text-emerald-400',
+    accentBorder: 'border-emerald-400/35',
+    accentGlow: 'shadow-[0_0_24px_rgba(52,211,153,0.20)]',
+    heroGradient: 'from-[#041d18] via-[#062b26] to-[#040b14]',
+    cardBg: 'bg-[#081f1c]/82',
+    activePill:
+      'bg-gradient-to-r from-emerald-400 via-teal-300 to-cyan-400 text-slate-950 shadow-[0_0_22px_rgba(52,211,153,0.42)]',
+    chartPrimary: '#34d399',
+    chartSecondary: '#fbbf24'
+  }
+};
+
+// Base roster definitions (strictly zeroed stats, credentials never rendered in UI)
+const SQUAD_ROSTER = [
+  { id: 'p1', name: 'Gaurav Lalwani', jersey: '45', role: 'All-Rounder', isAdmin: true, isGM: true, defaultPass: 'Admin-045', adminPass: 'OQLM45' },
+  { id: 'p2', name: 'Granth Sharma', jersey: '07', role: 'All-Rounder', isAdmin: true, isGM: true, defaultPass: 'Admin-07', adminPass: 'OQLM07' },
+  { id: 'p3', name: 'Adhyan Upadhyay', jersey: '01', role: 'Batsman', isAdmin: false, isGM: false, defaultPass: 'Adhu001' },
+  { id: 'p4', name: 'Virat Chaudary', jersey: '18', role: 'Batsman', isAdmin: false, isGM: true, defaultPass: 'Viru002' },
+  { id: 'p5', name: 'Agam Khandelwal', jersey: '03', role: 'Bowler', isAdmin: false, isGM: false, defaultPass: 'Agm003' },
+  { id: 'p6', name: 'Aditya Rathore', jersey: '04', role: 'All-Rounder', isAdmin: false, isGM: true, defaultPass: 'Abhi004' },
+  { id: 'p7', name: 'Anuj Mishra', jersey: '05', role: 'Bowler', isAdmin: false, isGM: false, defaultPass: 'Anu005' },
+  { id: 'p8', name: 'Aadarsh Mishra', jersey: '06', role: 'Batsman', isAdmin: false, isGM: false, defaultPass: 'Ada006' },
+  { id: 'p9', name: 'Atharv Solanki', jersey: '08', role: 'Wicket-Keeper', isAdmin: false, isGM: true, defaultPass: 'Aathu007' },
+  { id: 'p10', name: 'Ashwin Gagrani', jersey: '99', role: 'All-Rounder', isAdmin: false, isGM: true, defaultPass: 'Shivu008' },
+  { id: 'p11', name: 'Rudraksh Soni', jersey: '09', role: 'Bowler', isAdmin: false, isGM: false, defaultPass: 'Rudu009' },
+  { id: 'p12', name: 'Naitik Arya', jersey: '10', role: 'Batsman', isAdmin: false, isGM: true, defaultPass: 'Nai010' },
+  { id: 'p13', name: 'Harshit Nagpal', jersey: '11', role: 'All-Rounder', isAdmin: false, isGM: true, defaultPass: 'Harsh011' }
+];
+
+// Creates a completely zeroed player record
+function makeZeroPlayer(base) {
+  return {
+    id: base.id,
+    name: base.name,
+    jersey: base.jersey,
+    role: base.role,
+    isAdmin: base.isAdmin,
+    isGM: base.isGM,
+    matches: 0,
+    runs: 0,
+    ballsFaced: 0,
+    fours: 0,
+    sixes: 0,
+    wickets: 0,
+    oversBowled: 0,
+    runsConceded: 0,
+    finesDue: 0,
+    advanceCredit: 0,
+    funAward: 'Squad Member'
   };
 }
 
-interface SpeechRecognitionLike {
-  lang: string;
-  interimResults: boolean;
-  maxAlternatives: number;
-  onresult: ((ev: SpeechRecognitionEventLike) => void) | null;
-  onerror: (() => void) | null;
-  onend: (() => void) | null;
-  start: () => void;
-  stop: () => void;
+// Creates a fresh zero-state club workspace ('il' = 13 players, 'gm' = 8 GM players)
+function createZeroWorkspace(clubKey) {
+  const isGM = clubKey === 'gm';
+  const roster = isGM ? SQUAD_ROSTER.filter((p) => p.isGM) : SQUAD_ROSTER;
+  return {
+    clubKey,
+    clubName: isGM ? 'Ganesh Mandir Cricket Club' : 'Indore Legends',
+    shortName: isGM ? 'Ganesh Mandir' : 'Indore Legends',
+    announcement: isGM
+      ? 'GANESH MANDIR CRICKET ZONE: Create a match, vote in attendance, and track club stats from scratch.'
+      : 'INDORE LEGENDS HUB: Fresh season initialized. Create your first match or mark attendance below.',
+    players: roster.map(makeZeroPlayer),
+    scheduledMatch: null,
+    liveMatch: null,
+    matchHistory: [],
+    treasury: [],
+    poll: [],
+    messages: [],
+    recentResults: [] // Array of 'W' | 'L' | 'T'
+  };
 }
 
-interface Player {
-  id: string;
-  name: string;
-  role: PlayerRole;
-  isAdmin: boolean;
-  isGM: boolean;
-  defaultPass: string;
-  adminPass?: string;
-  matches: number;
-  runs: number;
-  ballsFaced: number;
-  fours: number;
-  sixes: number;
-  wickets: number;
-  oversBowled: number;
-  runsConceded: number;
-  finesDue: number;
-  advanceCredit: number;
-  funAward: string;
-}
-
-interface ChecklistItem {
-  id: string;
-  label: string;
-  done: boolean;
-}
-
-interface ScheduledMatch {
-  id: string;
-  title: string;
-  dateTime: string;
-  overs: number;
-  selectedPlayerIds: string[];
-  teamAName: string;
-  teamBName: string;
-  teamAIds: string[];
-  teamBIds: string[];
-  teamACaptain: string;
-  teamAViceCaptain: string;
-  teamBCaptain: string;
-  teamBViceCaptain: string;
-  tossWinner: string;
-  tossDecision: "BAT" | "BOWL" | "";
-  checklist: ChecklistItem[];
-}
-
-interface InningsBatterStat {
-  name: string;
-  runs: number;
-  balls: number;
-  fours: number;
-  sixes: number;
-  out: boolean;
-  dismissal: string;
-  retiredHurt: boolean;
-}
-
-interface InningsBowlerStat {
-  name: string;
-  balls: number;
-  runs: number;
-  wickets: number;
-}
-
-interface BallEvent {
-  id: string;
-  innings: 1 | 2;
-  over: number;
-  ballInOver: number;
-  runs: number;
-  isWide: boolean;
-  isNoBall: boolean;
-  isWicket: boolean;
-  isFreeHit: boolean;
-  wicketType?: string;
-  batsman: string;
-  bowler: string;
-  timestamp: string;
-}
-
-interface LiveMatch {
-  id: string;
-  title: string;
-  totalOvers: number;
-  innings: 1 | 2;
-  isSuperOver: boolean;
-  battingTeam: string;
-  bowlingTeam: string;
-  battingPlayers: string[];
-  bowlingPlayers: string[];
-  teamAName: string;
-  teamBName: string;
-  teamAPlayers: string[];
-  teamBPlayers: string[];
-  firstInningsScore: number | null;
-  firstInningsWickets: number | null;
-  runs: number;
-  wickets: number;
-  balls: number;
-  target: number | null;
-  striker: string;
-  nonStriker: string;
-  bowler: string;
-  freeHitActive: boolean;
-  isCompleted: boolean;
-  isTied: boolean;
-  resultText: string;
-  batters: Record<string, InningsBatterStat>;
-  bowlers: Record<string, InningsBowlerStat>;
-  history: BallEvent[];
-  tossInfo: string;
-  captainsInfo: string;
-}
-
-interface CompletedMatch {
-  id: string;
-  title: string;
-  date: string;
-  summary: string;
-  winner: string;
-  mvp: string;
-  scorecardText: string;
-}
-
-interface TreasuryEntry {
-  id: string;
-  title: string;
-  type: LedgerType;
-  amount: number;
-  memberName: string;
-  date: string;
-}
-
-interface PollVote {
-  playerId: string;
-  playerName: string;
-  choice: PollChoice;
-}
-
-interface ChatMessage {
-  id: string;
-  sender: string;
-  text: string;
-  timestamp: string;
-}
-
-interface BotMessage {
-  id: string;
-  role: "user" | "bot";
-  layer?: string;
-  text: string;
-  timestamp: string;
-}
-
-interface GMVisit {
-  id: string;
-  date: string;
-  time: string;
-  plan: string;
-  prasadDuty: string;
-}
-
-interface GMState {
-  messages: ChatMessage[];
-  visits: GMVisit[];
-  treasury: TreasuryEntry[];
-  poll: PollVote[];
-  mapUrl: string;
-}
-
-interface ClubState {
-  players: Player[];
-  customPasswords: Record<string, string>;
-  announcement: string;
-  groundName: string;
-  groundMapUrl: string;
-  scheduledMatch: ScheduledMatch | null;
-  liveMatch: LiveMatch | null;
-  matchHistory: CompletedMatch[];
-  treasury: TreasuryEntry[];
-  poll: PollVote[];
-  messages: ChatMessage[];
-  gm: GMState;
-}
-
-interface AuthSession {
-  playerId: string;
-  isAdminSession: boolean;
-}
-
-interface PieSlice {
-  label: string;
-  value: number;
-  color: string;
-}
-
-const STORAGE_KEY = "indore_legends_clean_v4";
-const ADMIN_PIN = "450718";
-const DEFAULT_LAUNCH_TIME = "2026-11-29T15:00:00+05:30";
-
-const INITIAL_PLAYERS: Player[] = [
-  {
-    id: "p1",
-    name: "Gaurav Lalwani",
-    role: "All-Rounder",
-    isAdmin: true,
-    isGM: true,
-    defaultPass: "Admin-045",
-    adminPass: "OQLM45",
-    matches: 18,
-    runs: 465,
-    ballsFaced: 308,
-    fours: 44,
-    sixes: 22,
-    wickets: 21,
-    oversBowled: 42,
-    runsConceded: 258,
-    finesDue: 0,
-    advanceCredit: 200,
-    funAward: "Captain Cool",
-  },
-  {
-    id: "p2",
-    name: "Granth Sharma",
-    role: "All-Rounder",
-    isAdmin: true,
-    isGM: true,
-    defaultPass: "Admin-07",
-    adminPass: "OQLM07",
-    matches: 18,
-    runs: 420,
-    ballsFaced: 295,
-    fours: 38,
-    sixes: 18,
-    wickets: 19,
-    oversBowled: 40,
-    runsConceded: 252,
-    finesDue: 0,
-    advanceCredit: 150,
-    funAward: "Clutch Finisher",
-  },
-  {
-    id: "p3",
-    name: "Adhyan Upadhyay",
-    role: "Batsman",
-    isAdmin: false,
-    isGM: false,
-    defaultPass: "Adhu001",
-    matches: 15,
-    runs: 342,
-    ballsFaced: 248,
-    fours: 32,
-    sixes: 12,
-    wickets: 4,
-    oversBowled: 10,
-    runsConceded: 72,
-    finesDue: 50,
-    advanceCredit: 0,
-    funAward: "Cover Drive King",
-  },
-  {
-    id: "p4",
-    name: "Virat Chaudary",
-    role: "Batsman",
-    isAdmin: false,
-    isGM: true,
-    defaultPass: "Viru002",
-    matches: 17,
-    runs: 488,
-    ballsFaced: 332,
-    fours: 49,
-    sixes: 19,
-    wickets: 3,
-    oversBowled: 8,
-    runsConceded: 64,
-    finesDue: 0,
-    advanceCredit: 100,
-    funAward: "Chase Master",
-  },
-  {
-    id: "p5",
-    name: "Agam Khandelwal",
-    role: "Bowler",
-    isAdmin: false,
-    isGM: false,
-    defaultPass: "Agm003",
-    matches: 14,
-    runs: 118,
-    ballsFaced: 102,
-    fours: 9,
-    sixes: 4,
-    wickets: 23,
-    oversBowled: 44,
-    runsConceded: 268,
-    finesDue: 0,
-    advanceCredit: 50,
-    funAward: "Yorker Machine",
-  },
-  {
-    id: "p6",
-    name: "Aditya Rathore",
-    role: "All-Rounder",
-    isAdmin: false,
-    isGM: true,
-    defaultPass: "Abhi004",
-    matches: 16,
-    runs: 315,
-    ballsFaced: 222,
-    fours: 27,
-    sixes: 14,
-    wickets: 16,
-    oversBowled: 35,
-    runsConceded: 229,
-    finesDue: 50,
-    advanceCredit: 0,
-    funAward: "Six Hitter",
-  },
-  {
-    id: "p7",
-    name: "Anuj Mishra",
-    role: "Bowler",
-    isAdmin: false,
-    isGM: false,
-    defaultPass: "Anu005",
-    matches: 15,
-    runs: 96,
-    ballsFaced: 88,
-    fours: 8,
-    sixes: 2,
-    wickets: 26,
-    oversBowled: 48,
-    runsConceded: 280,
-    finesDue: 0,
-    advanceCredit: 0,
-    funAward: "Dot Ball King",
-  },
-  {
-    id: "p8",
-    name: "Aadarsh Mishra",
-    role: "Batsman",
-    isAdmin: false,
-    isGM: false,
-    defaultPass: "Ada006",
-    matches: 14,
-    runs: 274,
-    ballsFaced: 210,
-    fours: 25,
-    sixes: 9,
-    wickets: 5,
-    oversBowled: 12,
-    runsConceded: 88,
-    finesDue: 100,
-    advanceCredit: 0,
-    funAward: "Wall of Indore",
-  },
-  {
-    id: "p9",
-    name: "Atharv Solanki",
-    role: "Wicket-Keeper",
-    isAdmin: false,
-    isGM: true,
-    defaultPass: "Aathu007",
-    matches: 16,
-    runs: 302,
-    ballsFaced: 218,
-    fours: 29,
-    sixes: 11,
-    wickets: 1,
-    oversBowled: 2,
-    runsConceded: 16,
-    finesDue: 0,
-    advanceCredit: 50,
-    funAward: "Lightning Gloves",
-  },
-  {
-    id: "p10",
-    name: "Ashwin Gagrani",
-    role: "All-Rounder",
-    isAdmin: false,
-    isGM: true,
-    defaultPass: "Shivu008",
-    matches: 15,
-    runs: 245,
-    ballsFaced: 185,
-    fours: 20,
-    sixes: 10,
-    wickets: 18,
-    oversBowled: 36,
-    runsConceded: 230,
-    finesDue: 0,
-    advanceCredit: 100,
-    funAward: "Mystery Spinner",
-  },
-  {
-    id: "p11",
-    name: "Rudraksh Soni",
-    role: "Bowler",
-    isAdmin: false,
-    isGM: false,
-    defaultPass: "Rudu009",
-    matches: 13,
-    runs: 84,
-    ballsFaced: 76,
-    fours: 7,
-    sixes: 3,
-    wickets: 17,
-    oversBowled: 34,
-    runsConceded: 224,
-    finesDue: 50,
-    advanceCredit: 0,
-    funAward: "Death Over Boss",
-  },
-  {
-    id: "p12",
-    name: "Naitik Arya",
-    role: "Batsman",
-    isAdmin: false,
-    isGM: true,
-    defaultPass: "Nai010",
-    matches: 15,
-    runs: 328,
-    ballsFaced: 236,
-    fours: 31,
-    sixes: 13,
-    wickets: 6,
-    oversBowled: 14,
-    runsConceded: 98,
-    finesDue: 0,
-    advanceCredit: 0,
-    funAward: "Powerplay Blaster",
-  },
-  {
-    id: "p13",
-    name: "Harshit Nagpal",
-    role: "All-Rounder",
-    isAdmin: false,
-    isGM: true,
-    defaultPass: "Harsh011",
-    matches: 17,
-    runs: 364,
-    ballsFaced: 252,
-    fours: 33,
-    sixes: 17,
-    wickets: 20,
-    oversBowled: 39,
-    runsConceded: 248,
-    finesDue: 0,
-    advanceCredit: 100,
-    funAward: "Impact Player",
-  },
-];
-
-const DEFAULT_STATE: ClubState = {
-  players: INITIAL_PLAYERS,
-  customPasswords: {},
-  announcement: "INDORE LEGENDS SEASON LAUNCH: Nov 29, 2026 at 3:00 PM IST! Vote in the Playing Poll below.",
-  groundName: "Indore Legends Home Ground, Indore",
-  groundMapUrl: "https://www.google.com/maps/search/?api=1&query=Indore+Cricket+Ground+Madhya+Pradesh",
-  scheduledMatch: null,
-  liveMatch: null,
-  matchHistory: [],
-  treasury: [
-    {
-      id: "tr_1",
-      title: "Monthly Squad Pool",
-      type: "CREDIT",
-      amount: 2600,
-      memberName: "All Squad",
-      date: "2026-11-20",
+function createInitialAppState() {
+  return {
+    clubs: {
+      il: createZeroWorkspace('il'),
+      gm: createZeroWorkspace('gm')
     },
-    {
-      id: "tr_2",
-      title: "Wind Balls and Grips",
-      type: "EXPENSE",
-      amount: 650,
-      memberName: "Gaurav Lalwani",
-      date: "2026-11-21",
-    },
-    {
-      id: "tr_3",
-      title: "Late Arrival Fine",
-      type: "FINE",
-      amount: 100,
-      memberName: "Aadarsh Mishra",
-      date: "2026-11-22",
-    },
-    {
-      id: "tr_4",
-      title: "Advance Turf Booking Deposit",
-      type: "ADVANCE",
-      amount: 750,
-      memberName: "Club Members",
-      date: "2026-11-22",
-    },
-  ],
-  poll: [
-    { playerId: "p1", playerName: "Gaurav Lalwani", choice: "IN" },
-    { playerId: "p2", playerName: "Granth Sharma", choice: "IN" },
-    { playerId: "p13", playerName: "Harshit Nagpal", choice: "IN" },
-  ],
-  messages: [
-    {
-      id: "msg_1",
-      sender: "Gaurav Lalwani",
-      text: "Welcome to Indore Legends Hub! Check your player card, dues, and vote in the match poll.",
-      timestamp: "06:00 PM",
-    },
-  ],
-  gm: {
-    messages: [
-      {
-        id: "gm_m1",
-        sender: "Gaurav Lalwani",
-        text: "Jai Shri Ganesh! Welcome to the private Ganesh Mandir Squad Zone.",
-        timestamp: "06:00 PM",
-      },
-    ],
-    visits: [
-      {
-        id: "gm_v1",
-        date: "2026-11-25",
-        time: "07:00 AM",
-        plan: "Wednesday Morning Darshan and Aarti",
-        prasadDuty: "Gaurav Lalwani and Granth Sharma",
-      },
-    ],
-    treasury: [
-      {
-        id: "gm_t1",
-        title: "Prasad and Modak Pool",
-        type: "CREDIT",
-        amount: 800,
-        memberName: "G.M Group",
-        date: "2026-11-20",
-      },
-      {
-        id: "gm_t2",
-        title: "Modak and Flowers",
-        type: "EXPENSE",
-        amount: 250,
-        memberName: "Harshit Nagpal",
-        date: "2026-11-21",
-      },
-    ],
-    poll: [
-      { playerId: "p1", playerName: "Gaurav Lalwani", choice: "IN" },
-      { playerId: "p2", playerName: "Granth Sharma", choice: "IN" },
-    ],
-    mapUrl: "https://www.google.com/maps/search/?api=1&query=Khajrana+Ganesh+Mandir+Indore",
-  },
-};
+    customPasswords: {},
+    themeKey: 'royal'
+  };
+}
 
-const APP_STYLES = [
-  ":root { --bg: #040714; --panel: rgba(13, 21, 42, 0.92); --border: rgba(148, 163, 184, 0.22); --gold: #fbbf24; --cyan: #38bdf8; --emerald: #34d399; --rose: #fb7185; --purple: #a78bfa; --text: #f8fafc; --muted: #94a3b8; }",
-  "* { box-sizing: border-box; }",
-  "html, body, #root { margin: 0; padding: 0; min-height: 100vh; background: radial-gradient(circle at top, #101b3d 0%, #040714 68%); color: var(--text); font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; }",
-  "@keyframes freeHitFlash { 0%, 100% { background: rgba(245, 158, 11, 0.96); color: #090d1e; box-shadow: 0 0 28px rgba(251, 191, 36, 0.9); } 50% { background: rgba(225, 29, 72, 0.96); color: #ffffff; box-shadow: 0 0 28px rgba(244, 63, 94, 0.9); } }",
-  "@keyframes coinSpin { 0% { transform: rotateY(0deg) scale(1); } 50% { transform: rotateY(360deg) scale(1.12); } 100% { transform: rotateY(720deg) scale(1); } }",
-  ".il-freehit-banner { animation: freeHitFlash 0.75s infinite; padding: 10px 14px; border-radius: 12px; text-align: center; font-weight: 900; letter-spacing: 0.14em; font-size: 14px; margin-bottom: 12px; text-transform: uppercase; }",
-  ".il-coin-spin { animation: coinSpin 0.75s ease-in-out; }",
-  ".il-shell { max-width: 960px; margin: 0 auto; padding: 12px 12px 96px 12px; }",
-  ".il-gold-bar { background: linear-gradient(90deg, #92400e, #d97706, #f59e0b, #d97706, #92400e); color: #0b0f1f; padding: 10px 14px; border-radius: 14px; font-weight: 800; font-size: 13px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; box-shadow: 0 8px 24px rgba(245, 158, 11, 0.28); }",
-  ".il-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: var(--panel); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 16px; margin-bottom: 12px; backdrop-filter: blur(12px); }",
-  ".il-crest { width: 44px; height: 44px; border-radius: 13px; background: linear-gradient(135deg, #f59e0b, #ef4444, #7c3aed); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 900; font-size: 17px; letter-spacing: 0.04em; cursor: pointer; user-select: none; box-shadow: 0 0 18px rgba(245, 158, 11, 0.35); flex-shrink: 0; }",
-  ".il-card { background: var(--panel); border: 1px solid var(--border); border-radius: 16px; padding: 16px; margin-bottom: 12px; box-shadow: 0 12px 30px rgba(0, 0, 0, 0.32); }",
-  ".il-ipl-card { background: linear-gradient(135deg, rgba(29, 78, 216, 0.24), rgba(15, 23, 42, 0.96), rgba(180, 83, 9, 0.22)); border: 1px solid rgba(251, 191, 36, 0.42); }",
-  ".il-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }",
-  ".il-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }",
-  ".il-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }",
-  "@media (max-width: 600px) { .il-resp-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .il-resp-1 { grid-template-columns: 1fr; } }",
-  ".il-btn { border: 1px solid var(--border); background: #1e293b; color: #f8fafc; border-radius: 11px; padding: 10px 13px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: transform 0.08s ease, opacity 0.15s ease; }",
-  ".il-btn:active { transform: scale(0.97); }",
-  ".il-btn:disabled { opacity: 0.4; cursor: not-allowed; }",
-  ".il-btn-primary { background: linear-gradient(135deg, #0284c7, #2563eb); border-color: rgba(56, 189, 248, 0.55); }",
-  ".il-btn-gold { background: linear-gradient(135deg, #d97706, #f59e0b); color: #090d1e; border-color: rgba(251, 191, 36, 0.7); }",
-  ".il-btn-emerald { background: rgba(16, 185, 129, 0.2); border-color: rgba(52, 211, 153, 0.5); color: #6ee7b7; }",
-  ".il-btn-danger { background: linear-gradient(135deg, #be123c, #e11d48); border-color: rgba(251, 113, 133, 0.6); color: #ffffff; }",
-  ".il-btn-purple { background: rgba(139, 92, 246, 0.22); border-color: rgba(167, 139, 250, 0.5); color: #ddd6fe; }",
-  ".il-input, .il-select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid rgba(148, 163, 184, 0.3); background: #020617; color: #f8fafc; font-size: 14px; outline: none; }",
-  ".il-input:focus, .il-select:focus { border-color: var(--cyan); }",
-  ".il-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }",
-  ".il-ball { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; border: 1px solid var(--border); flex-shrink: 0; }",
-  ".il-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: rgba(2, 6, 23, 0.95); border-top: 1px solid rgba(56, 189, 248, 0.22); backdrop-filter: blur(14px); display: flex; justify-content: center; padding: 8px 6px; }",
-  ".il-nav-inner { width: 100%; max-width: 960px; display: flex; justify-content: space-around; gap: 4px; }",
-  ".il-nav-item { flex: 1; background: transparent; border: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 10px; font-size: 11px; font-weight: 700; cursor: pointer; }",
-  ".il-nav-item.active { color: var(--gold); background: rgba(251, 191, 36, 0.13); }",
-  ".il-modal-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(2, 6, 23, 0.82); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 16px; }",
-  ".il-modal { width: 100%; max-width: 440px; background: #0b1228; border: 1px solid rgba(251, 191, 36, 0.45); border-radius: 18px; padding: 20px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.7); }",
-  ".il-scroll-box { max-height: 330px; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; padding-right: 4px; }",
-].join("\n");
-
-function loadState(): ClubState {
+function loadAppState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_STATE;
-    const parsed = JSON.parse(raw) as Partial<ClubState>;
+    if (!raw) return createInitialAppState();
+    const parsed = JSON.parse(raw);
+    const base = createInitialAppState();
     return {
-      ...DEFAULT_STATE,
-      ...parsed,
-      players: Array.isArray(parsed.players) && parsed.players.length > 0 ? parsed.players : INITIAL_PLAYERS,
-      customPasswords: parsed.customPasswords || {},
-      treasury: Array.isArray(parsed.treasury) ? parsed.treasury : DEFAULT_STATE.treasury,
-      poll: Array.isArray(parsed.poll) ? parsed.poll : DEFAULT_STATE.poll,
-      messages: Array.isArray(parsed.messages) ? parsed.messages : DEFAULT_STATE.messages,
-      matchHistory: Array.isArray(parsed.matchHistory) ? parsed.matchHistory : [],
-      gm: parsed.gm ? { ...DEFAULT_STATE.gm, ...parsed.gm } : DEFAULT_STATE.gm,
+      clubs: {
+        il: { ...base.clubs.il, ...(parsed?.clubs?.il || {}) },
+        gm: { ...base.clubs.gm, ...(parsed?.clubs?.gm || {}) }
+      },
+      customPasswords: parsed?.customPasswords || {},
+      themeKey: parsed?.themeKey && THEMES[parsed.themeKey] ? parsed.themeKey : 'royal'
     };
   } catch {
-    return DEFAULT_STATE;
+    return createInitialAppState();
   }
 }
 
-function uid(prefix: string): string {
-  return prefix + "_" + Date.now() + "_" + Math.random().toString(36).slice(2, 7);
-}
+// ============================================================================
+// 2. PURE HELPER FUNCTIONS
+// ============================================================================
+const uid = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+const nowTime = () => new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+const formatOvers = (legalBalls) => `${Math.floor(legalBalls / 6)}.${legalBalls % 6}`;
+const calcPoints = (p) => p.runs + p.wickets * 24 + p.sixes * 5;
 
-function nowTime(): string {
-  return new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
-}
-
-function formatOvers(legalBalls: number): string {
-  return Math.floor(legalBalls / 6) + "." + (legalBalls % 6);
-}
-
-function playerRankScore(p: Player): number {
-  return p.runs + p.wickets * 22 + p.sixes * 4;
-}
-
-function threeDaysFromNowIso(): string {
-  const d = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+function defaultMatchDateTime() {
+  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
   const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const dd = String(d.getDate()).padStart(2, "0");
-  return yyyy + "-" + mm + "-" + dd + "T06:30";
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T06:30`;
 }
 
-function verifyPlayerPassword(
-  player: Player,
-  inputRaw: string,
-  customPasswords: Record<string, string>
-): { ok: boolean; asAdmin: boolean } {
-  const input = inputRaw.trim();
-  if (!input) return { ok: false, asAdmin: false };
+// Strict password verification — never leaks passwords
+function verifyCredentials(playerId, rawInput, customPasswords) {
+  const base = SQUAD_ROSTER.find((p) => p.id === playerId);
+  const input = rawInput.trim();
+  if (!base || !input) return { ok: false, asAdmin: false };
 
-  if (player.isAdmin && player.adminPass) {
-    const normalizedInput = input.replace(/^0/, "O").toUpperCase();
-    const normalizedAdmin = player.adminPass.replace(/^0/, "O").toUpperCase();
-    if (input === player.adminPass || normalizedInput === normalizedAdmin) {
+  // Locked admin password check
+  if (base.isAdmin && base.adminPass) {
+    const normIn = input.replace(/^0/, 'O').toUpperCase();
+    const normAdm = base.adminPass.replace(/^0/, 'O').toUpperCase();
+    if (input === base.adminPass || normIn === normAdm) {
       return { ok: true, asAdmin: true };
     }
   }
 
-  const activeNormal = customPasswords[player.id] || player.defaultPass;
-  if (input === activeNormal) {
-    return { ok: true, asAdmin: false };
+  // Normal password check (supports custom user-changed password)
+  const activePass = customPasswords[base.id] || base.defaultPass;
+  if (input === activePass) {
+    return { ok: true, asAdmin: Boolean(base.isAdmin) };
   }
 
-  if (!customPasswords[player.id]) {
-    if (player.id === "p11" && input === "Rudu09") {
-      return { ok: true, asAdmin: false };
-    }
-    if (input.replace(/\s+/g, "") === player.defaultPass) {
-      return { ok: true, asAdmin: false };
-    }
+  // Special alias for Rudraksh Soni if password has not been customized
+  if (!customPasswords[base.id] && base.id === 'p11' && input === 'Rudu09') {
+    return { ok: true, asAdmin: false };
   }
 
   return { ok: false, asAdmin: false };
 }
 
-function splitTeamsByRanking(selected: Player[]): { teamA: Player[]; teamB: Player[] } {
-  const ranked = [...selected].sort((a, b) => playerRankScore(b) - playerRankScore(a));
-  const teamA: Player[] = [];
-  const teamB: Player[] = [];
-  ranked.forEach((pl, idx) => {
-    const cycle = idx % 4;
-    if (cycle === 0 || cycle === 3) {
-      teamA.push(pl);
-    } else {
-      teamB.push(pl);
-    }
+function splitBalancedTeams(players) {
+  const sorted = [...players].sort((a, b) => {
+    const diff = calcPoints(b) - calcPoints(a);
+    return diff !== 0 ? diff : a.name.localeCompare(b.name);
+  });
+  const teamA = [];
+  const teamB = [];
+  sorted.forEach((p, idx) => {
+    if (idx % 4 === 0 || idx % 4 === 3) teamA.push(p);
+    else teamB.push(p);
   });
   return { teamA, teamB };
 }
 
-function autoPickCaptains(team: Player[]): { captain: string; viceCaptain: string } {
-  if (team.length === 0) return { captain: "TBD", viceCaptain: "TBD" };
-  if (team.length === 1) return { captain: team[0].name, viceCaptain: team[0].name };
-  const shuffled = [...team].sort((a, b) => {
-    const scoreA = playerRankScore(a) + Math.random() * 140;
-    const scoreB = playerRankScore(b) + Math.random() * 140;
-    return scoreB - scoreA;
-  });
+function pickTeamLeaders(teamPlayers) {
+  if (teamPlayers.length === 0) return { captain: '', viceCaptain: '' };
+  if (teamPlayers.length === 1) return { captain: teamPlayers[0].name, viceCaptain: teamPlayers[0].name };
+  const shuffled = [...teamPlayers].sort(() => Math.random() - 0.5);
   return { captain: shuffled[0].name, viceCaptain: shuffled[1].name };
 }
 
-function DonutPieChart({ slices, centerLabel }: { slices: PieSlice[]; centerLabel: string }) {
-  const total = slices.reduce((sum, s) => sum + Math.max(0, s.value), 0);
-  const radius = 56;
-  const circumference = 2 * Math.PI * radius;
-  let cumulative = 0;
+// ============================================================================
+// 3. CRISP CUSTOM SVG GRAPHICS (ZERO EXTERNAL BROKEN IMAGE URLS)
+// ============================================================================
+const LionCrestSVG = ({ size = 54, onClick, isGM = false }) => (
+  <div
+    onClick={onClick}
+    className="relative inline-flex items-center justify-center select-none cursor-pointer group shrink-0"
+    style={{ width: size, height: size }}
+    title={isGM ? 'Ganesh Mandir Cricket Crest' : 'Indore Legends Golden Lion Crest'}
+  >
+    <div
+      className={`absolute inset-0 rounded-full blur-md transition-all ${
+        isGM ? 'bg-orange-500/30 group-hover:bg-orange-400/50' : 'bg-amber-400/25 group-hover:bg-amber-400/45'
+      }`}
+    />
+    <svg viewBox="0 0 100 100" className="relative w-full h-full drop-shadow-[0_0_12px_rgba(251,191,36,0.5)]">
+      <defs>
+        <linearGradient id={isGM ? 'gmGoldGrad' : 'ilGoldGrad'} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#fef08a" />
+          <stop offset="45%" stopColor={isGM ? '#fb923c' : '#f59e0b'} />
+          <stop offset="100%" stopColor="#b45309" />
+        </linearGradient>
+        <linearGradient id="crestNavyBg" x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={isGM ? '#3b1506' : '#0f2557'} />
+          <stop offset="100%" stopColor="#040a1d" />
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="52" r="44" fill="url(#crestNavyBg)" stroke={`url(#${isGM ? 'gmGoldGrad' : 'ilGoldGrad'})`} strokeWidth="3.5" />
+      <circle cx="50" cy="52" r="38" fill="none" stroke={isGM ? '#fb923c' : '#38bdf8'} strokeOpacity="0.4" strokeWidth="1" strokeDasharray="4 3" />
+      {/* Crown */}
+      <path d="M34 26 L39 14 L46 21 L50 11 L54 21 L61 14 L66 26 Z" fill={`url(#${isGM ? 'gmGoldGrad' : 'ilGoldGrad'})`} />
+      <rect x="35" y="27" width="30" height="3.5" rx="1.5" fill="#fef08a" />
+      {/* Stylized Lion Shield */}
+      <path
+        d="M50 33 C36 33 27 42 27 55 C27 68 37 79 50 84 C63 79 73 68 73 55 C73 42 64 33 50 33 Z"
+        fill={`url(#${isGM ? 'gmGoldGrad' : 'ilGoldGrad'})`}
+        fillOpacity="0.22"
+        stroke={`url(#${isGM ? 'gmGoldGrad' : 'ilGoldGrad'})`}
+        strokeWidth="2.2"
+      />
+      <path d="M29 47 L22 51 L28 57 L23 64 L32 67" fill="none" stroke={`url(#${isGM ? 'gmGoldGrad' : 'ilGoldGrad'})`} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M71 47 L78 51 L72 57 L77 64 L68 67" fill="none" stroke={`url(#${isGM ? 'gmGoldGrad' : 'ilGoldGrad'})`} strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" />
+      <polygon points="39,49 45,51 41,54" fill="#fef08a" />
+      <polygon points="61,49 55,51 59,54" fill="#fef08a" />
+      <path d="M46 58 L54 58 L50 64 Z" fill={`url(#${isGM ? 'gmGoldGrad' : 'ilGoldGrad'})`} />
+      <path d="M43 68 Q50 73 57 68" fill="none" stroke="#fef08a" strokeWidth="2.4" strokeLinecap="round" />
+      <text x="50" y="94" textAnchor="middle" fill="#fde68a" fontSize="9.5" fontWeight="900" letterSpacing="1.6">
+        {isGM ? 'GM' : 'IL'}
+      </text>
+    </svg>
+  </div>
+);
+
+const PlayerAvatarSVG = ({ name, jersey, role, size = 'md' }) => {
+  const initials = name
+    .split(' ')
+    .map((w) => w[0])
+    .slice(0, 2)
+    .join('')
+    .toUpperCase();
+  const dims = size === 'lg' ? 'w-24 h-24' : size === 'sm' ? 'w-10 h-10' : 'w-16 h-16';
+  const accent =
+    role === 'Batsman'
+      ? '#38bdf8'
+      : role === 'Bowler'
+      ? '#a855f7'
+      : role === 'Wicket-Keeper'
+      ? '#34d399'
+      : '#fbbf24';
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", justifyContent: "center" }}>
-      <svg width="148" height="148" viewBox="0 0 148 148">
-        <circle cx="74" cy="74" r={radius} fill="none" stroke="rgba(148,163,184,0.16)" strokeWidth="20" />
+    <div className={`relative ${dims} shrink-0 select-none`}>
+      <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-[0_4px_12px_rgba(0,0,0,0.55)]">
+        <defs>
+          <linearGradient id={`j_${jersey}_${size}`} x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stopColor="#1d4ed8" />
+            <stop offset="60%" stopColor="#1e3a8a" />
+            <stop offset="100%" stopColor="#0f172a" />
+          </linearGradient>
+          <linearGradient id={`a_${jersey}_${size}`} x1="0%" y1="0%" x2="0%" y2="100%">
+            <stop offset="0%" stopColor={accent} stopOpacity="0.34" />
+            <stop offset="100%" stopColor="#050b1e" stopOpacity="0.92" />
+          </linearGradient>
+        </defs>
+        <rect x="4" y="4" width="112" height="112" rx="22" fill={`url(#a_${jersey}_${size})`} stroke="#fbbf24" strokeOpacity="0.45" strokeWidth="2.2" />
+        <circle cx="60" cy="40" r="18" fill="#e2b48b" />
+        <path d="M42 38 C42 24 51 19 60 19 C69 19 78 24 78 38 C75 30 67 27 60 27 C53 27 45 30 42 38 Z" fill="#0f172a" />
+        <path d="M22 114 C24 82 36 69 60 69 C84 69 96 82 98 114 Z" fill={`url(#j_${jersey}_${size})`} stroke="#fbbf24" strokeWidth="2" />
+        <path d="M47 69 L60 82 L73 69" fill="none" stroke="#fbbf24" strokeWidth="3.5" strokeLinejoin="round" />
+        <text x="60" y="103" textAnchor="middle" fill="#fde68a" fontSize="17" fontWeight="900" fontFamily="system-ui">
+          {size === 'sm' ? initials : `#${jersey}`}
+        </text>
+      </svg>
+    </div>
+  );
+};
+
+const WinRateDonutSVG = ({ pct = 0, primary = '#38bdf8', secondary = '#fbbf24' }) => {
+  const r = 38;
+  const circ = 2 * Math.PI * r;
+  const dash = (Math.min(100, Math.max(0, pct)) / 100) * circ;
+  return (
+    <svg viewBox="0 0 100 100" className="w-24 h-24 shrink-0">
+      <defs>
+        <linearGradient id="wrGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={secondary} />
+          <stop offset="100%" stopColor={primary} />
+        </linearGradient>
+      </defs>
+      <circle cx="50" cy="50" r={r} fill="none" stroke="rgba(148,163,184,0.18)" strokeWidth="9" />
+      {pct > 0 && (
+        <circle
+          cx="50"
+          cy="50"
+          r={r}
+          fill="none"
+          stroke="url(#wrGrad)"
+          strokeWidth="9"
+          strokeLinecap="round"
+          strokeDasharray={`${dash} ${circ}`}
+          transform="rotate(-90 50 50)"
+        />
+      )}
+      <text x="50" y="48" textAnchor="middle" fill="#ffffff" fontSize="20" fontWeight="900">
+        {pct}%
+      </text>
+      <text x="50" y="62" textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="700">
+        Win Rate
+      </text>
+    </svg>
+  );
+};
+
+const FinanceDonutSVG = ({ slices, centerLabel }) => {
+  const total = slices.reduce((s, x) => s + Math.max(0, x.value), 0);
+  const r = 52;
+  const circ = 2 * Math.PI * r;
+  let acc = 0;
+
+  return (
+    <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+      <svg viewBox="0 0 140 140" className="w-36 h-36 shrink-0">
+        <circle cx="70" cy="70" r={r} fill="none" stroke="rgba(148,163,184,0.16)" strokeWidth="18" />
         {total > 0 &&
-          slices.map((slice) => {
-            const val = Math.max(0, slice.value);
-            if (val === 0) return null;
-            const fraction = val / total;
-            const dash = fraction * circumference;
-            const offset = -cumulative * circumference;
-            cumulative += fraction;
+          slices.map((s) => {
+            const val = Math.max(0, s.value);
+            if (!val) return null;
+            const frac = val / total;
+            const dash = frac * circ;
+            const offset = -acc * circ;
+            acc += frac;
             return (
               <circle
-                key={slice.label}
-                cx="74"
-                cy="74"
-                r={radius}
+                key={s.label}
+                cx="70"
+                cy="70"
+                r={r}
                 fill="none"
-                stroke={slice.color}
-                strokeWidth="20"
-                strokeDasharray={dash + " " + circumference}
+                stroke={s.color}
+                strokeWidth="18"
+                strokeDasharray={`${dash} ${circ}`}
                 strokeDashoffset={offset}
-                transform="rotate(-90 74 74)"
+                transform="rotate(-90 70 70)"
               />
             );
           })}
-        <text x="74" y="70" textAnchor="middle" fill="#94a3b8" fontSize="10" fontWeight="700">
-          TOTAL
+        <text x="70" y="65" textAnchor="middle" fill="#94a3b8" fontSize="10" fontWeight="700">
+          CLUB FUND
         </text>
-        <text x="74" y="88" textAnchor="middle" fill="#ffffff" fontSize="15" fontWeight="900">
+        <text x="70" y="83" textAnchor="middle" fill="#ffffff" fontSize="14" fontWeight="900">
           {centerLabel}
         </text>
       </svg>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 160 }}>
+      <div className="grid grid-cols-1 gap-2 w-full max-w-[240px]">
         {slices.map((s) => {
           const pct = total > 0 ? Math.round((Math.max(0, s.value) / total) * 100) : 0;
           return (
-            <div key={s.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 10, height: 10, borderRadius: "50%", background: s.color, display: "inline-block" }} />
+            <div key={s.label} className="flex items-center justify-between text-xs sm:text-sm bg-white/5 px-3 py-2 rounded-xl border border-white/10">
+              <span className="flex items-center gap-2 text-slate-200 font-medium">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: s.color }} />
                 {s.label}
               </span>
-              <strong>
-                Rs.{s.value} ({pct}%)
-              </strong>
+              <span className="font-bold text-white">
+                Rs. {s.value} <span className="text-slate-400 text-[11px]">({pct}%)</span>
+              </span>
             </div>
           );
         })}
       </div>
     </div>
   );
-}
+};
 
+// ============================================================================
+// 4. MAIN APPLICATION COMPONENT
+// ============================================================================
 export default function App() {
-  const [state, setState] = useState<ClubState>(() => loadState());
-  const [session, setSession] = useState<AuthSession | null>(null);
-  const [tab, setTab] = useState<TabKey>("home");
+  // --- PERSISTED APP STATE ---
+  const [appState, setAppState] = useState(() => loadAppState());
+  const [session, setSession] = useState(null); // { playerId, isAdminSession }
+  const [activeClubKey, setActiveClubKey] = useState('il'); // 'il' | 'gm'
+  const [activeTab, setActiveTab] = useState('dashboard');
 
-  const [loginPlayerId, setLoginPlayerId] = useState<string>(INITIAL_PLAYERS[0].id);
-  const [loginPassword, setLoginPassword] = useState<string>("");
-  const [loginError, setLoginError] = useState<string>("");
+  // --- LOGIN FORM STATE (NORMAL LOGIN ONLY, ZERO HINTS) ---
+  const [loginPlayerId, setLoginPlayerId] = useState(SQUAD_ROSTER[0].id);
+  const [loginPassword, setLoginPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState('');
 
-  const [showDuePopup, setShowDuePopup] = useState<boolean>(false);
-  const [showPassForm, setShowPassForm] = useState<boolean>(false);
-  const [newNormalPass, setNewNormalPass] = useState<string>("");
-  const [passNotice, setPassNotice] = useState<string>("");
+  // --- GANESH MANDIR UNLOCK STATE ---
+  const [gmUnlocked, setGmUnlocked] = useState(false);
+  const [gmModalOpen, setGmModalOpen] = useState(false);
+  const [gmUnlockPass, setGmUnlockPass] = useState('');
+  const [gmUnlockError, setGmUnlockError] = useState('');
+  const crestTapsRef = useRef(0);
+  const crestTimerRef = useRef(null);
 
-  const [pinModalTitle, setPinModalTitle] = useState<string>("");
-  const [pinInput, setPinInput] = useState<string>("");
-  const [pinError, setPinError] = useState<string>("");
-  const pendingAdminActionRef = useRef<(() => void) | null>(null);
+  // --- ADMIN PIN MODAL STATE (NEVER SHOWS PIN HINT) ---
+  const [pinModal, setPinModal] = useState({ open: false, title: '', onConfirm: null });
+  const [pinInput, setPinInput] = useState('');
+  const [pinError, setPinError] = useState('');
 
-  const [gmUnlocked, setGmUnlocked] = useState<boolean>(false);
-  const [showGmLoginModal, setShowGmLoginModal] = useState<boolean>(false);
-  const [gmLoginId, setGmLoginId] = useState<string>(INITIAL_PLAYERS[0].id);
-  const [gmLoginPass, setGmLoginPass] = useState<string>("");
-  const [gmLoginErr, setGmLoginErr] = useState<string>("");
-  const crestTapCountRef = useRef<number>(0);
-  const crestTapTimerRef = useRef<number | null>(null);
+  // --- UI DRAWERS, TOASTS & CLOCK ---
+  const [moreDrawerOpen, setMoreDrawerOpen] = useState(false);
+  const [toast, setToast] = useState(null);
+  const [nowMs, setNowMs] = useState(() => Date.now());
 
-  const [nowMs, setNowMs] = useState<number>(() => Date.now());
+  // --- SQUAD & PROFILE MODAL STATE ---
+  const [squadSearch, setSquadSearch] = useState('');
+  const [selectedProfileId, setSelectedProfileId] = useState(null);
+  const [profileSubTab, setProfileSubTab] = useState('stats');
+  const [editAwardDraft, setEditAwardDraft] = useState('');
 
-  const [editingAnnouncement, setEditingAnnouncement] = useState<boolean>(false);
-  const [announcementDraft, setAnnouncementDraft] = useState<string>(state.announcement);
-  const [editingGround, setEditingGround] = useState<boolean>(false);
-  const [groundNameDraft, setGroundNameDraft] = useState<string>(state.groundName);
-  const [groundUrlDraft, setGroundUrlDraft] = useState<string>(state.groundMapUrl);
-
-  const [showCreateWizard, setShowCreateWizard] = useState<boolean>(false);
-  const [wizTitle, setWizTitle] = useState<string>("Indore Legends Clash");
-  const [wizDateTime, setWizDateTime] = useState<string>(() => threeDaysFromNowIso());
-  const [wizOvers, setWizOvers] = useState<number>(10);
-  const [wizTeamAName, setWizTeamAName] = useState<string>("Legends XI");
-  const [wizTeamBName, setWizTeamBName] = useState<string>("Strikers XI");
-  const [wizSelectedIds, setWizSelectedIds] = useState<string[]>(() =>
-    INITIAL_PLAYERS.slice(0, 10).map((p) => p.id)
-  );
-  const [newChecklistLabel, setNewChecklistLabel] = useState<string>("");
-
-  const [coinFlipping, setCoinFlipping] = useState<boolean>(false);
-  const [coinResult, setCoinResult] = useState<string>("");
-  const [gmCoinResult, setGmCoinResult] = useState<string>("");
-
-  const [wicketType, setWicketType] = useState<string>("Bowled");
-  const [umpireBanner, setUmpireBanner] = useState<string>("");
-  const [milestonePopup, setMilestonePopup] = useState<string>("");
-  const [showSwapBowler, setShowSwapBowler] = useState<boolean>(false);
-  const [swapBowlerName, setSwapBowlerName] = useState<string>("");
-
-  const [editPlayerId, setEditPlayerId] = useState<string>("");
-  const [editAwardText, setEditAwardText] = useState<string>("");
-
-  const [trTitle, setTrTitle] = useState<string>("");
-  const [trType, setTrType] = useState<LedgerType>("CREDIT");
-  const [trAmount, setTrAmount] = useState<string>("");
-  const [trMember, setTrMember] = useState<string>("Gaurav Lalwani");
-
-  const [chatText, setChatText] = useState<string>("");
-  const chatEndRef = useRef<HTMLDivElement | null>(null);
-
-  const [voiceOutput, setVoiceOutput] = useState<boolean>(false);
-  const [isListening, setIsListening] = useState<boolean>(false);
-  const [aiInput, setAiInput] = useState<string>("");
-  const [aiLoading, setAiLoading] = useState<boolean>(false);
-  const [aiMessages, setAiMessages] = useState<BotMessage[]>([
-    {
-      id: "bot_init",
-      role: "bot",
-      layer: "LegendBot Cricket Engine",
-      text: "Namaste Legend! Ask me anything about Indore Legends (live score, Orange/Purple Cap, dues, poll, MVP) OR any IPL, Cricbuzz, International, or Domestic cricket question. Tap the mic for Voice Input!",
-      timestamp: nowTime(),
-    },
+  // --- CREATE MATCH WIZARD STATE ---
+  const [createMatchOpen, setCreateMatchOpen] = useState(false);
+  const [wizTitle, setWizTitle] = useState('Indore Legends Match');
+  const [wizDateTime, setWizDateTime] = useState(() => defaultMatchDateTime());
+  const [wizOvers, setWizOvers] = useState(10);
+  const [wizTeamAName, setWizTeamAName] = useState('Legends XI');
+  const [wizTeamBName, setWizTeamBName] = useState('Strikers XI');
+  const [wizSelectedIds, setWizSelectedIds] = useState([]);
+  const [wizTeamAIds, setWizTeamAIds] = useState([]);
+  const [wizTeamBIds, setWizTeamBIds] = useState([]);
+  const [wizTeamACap, setWizTeamACap] = useState('');
+  const [wizTeamAVC, setWizTeamAVC] = useState('');
+  const [wizTeamBCap, setWizTeamBCap] = useState('');
+  const [wizTeamBVC, setWizTeamBVC] = useState('');
+  const [wizTossWinner, setWizTossWinner] = useState('');
+  const [wizTossDecision, setWizTossDecision] = useState('BAT');
+  const [coinSpinning, setCoinSpinning] = useState(false);
+  const [coinSide, setCoinSide] = useState('');
+  const [wizChecklist, setWizChecklist] = useState([
+    { id: 'c1', label: 'Wind Balls (2+ Extra)', done: false },
+    { id: 'c2', label: 'Bats & Grips Ready', done: false },
+    { id: 'c3', label: 'Stumps & Bails Packed', done: false },
+    { id: 'c4', label: 'Drinking Water', done: false }
   ]);
-  const aiEndRef = useRef<HTMLDivElement | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const [newCheckLabel, setNewCheckLabel] = useState('');
 
-  const [gmChatText, setGmChatText] = useState<string>("");
-  const [gmVisitDate, setGmVisitDate] = useState<string>("2026-11-28");
-  const [gmVisitTime, setGmVisitTime] = useState<string>("07:00 AM");
-  const [gmVisitPlan, setGmVisitPlan] = useState<string>("");
-  const [gmVisitPrasad, setGmVisitPrasad] = useState<string>("");
-  const [gmTrTitle, setGmTrTitle] = useState<string>("");
-  const [gmTrType, setGmTrType] = useState<LedgerType>("CREDIT");
-  const [gmTrAmount, setGmTrAmount] = useState<string>("");
+  // --- LIVE SCORER STATE ---
+  const [matchSubTab, setMatchSubTab] = useState('upcoming'); // upcoming | live | history
+  const [wicketType, setWicketType] = useState('Bowled');
+  const [swapBowlerOpen, setSwapBowlerOpen] = useState(false);
+  const [swapBowlerName, setSwapBowlerName] = useState('');
+  const [umpireBanner, setUmpireBanner] = useState('');
+  const [milestoneBanner, setMilestoneBanner] = useState('');
 
+  // --- LEADERBOARD STATE ---
+  const [lbTab, setLbTab] = useState('team'); // team | batting | bowling
+
+  // --- FINANCE FORM STATE ---
+  const [trTitle, setTrTitle] = useState('');
+  const [trType, setTrType] = useState('CREDIT');
+  const [trAmount, setTrAmount] = useState('');
+  const [trMember, setTrMember] = useState('All Squad');
+
+  // --- CHAT STATE ---
+  const [chatInput, setChatInput] = useState('');
+
+  // --- LEGENDBOT AI + VOICE STATE ---
+  const [voiceTts, setVoiceTts] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [aiInput, setAiInput] = useState('');
+  const [aiMessages, setAiMessages] = useState([
+    {
+      id: 'bot_intro',
+      role: 'bot',
+      text: 'Namaste Legend! Ask me about the live score, upcoming match, Orange/Purple Cap, Club Fund, Attendance Poll, or any player stats. Tap the mic for Voice Input!',
+      time: nowTime()
+    }
+  ]);
+  const recognitionRef = useRef(null);
+
+  // --- SETTINGS STATE ---
+  const [newPassInput, setNewPassInput] = useState('');
+  const [confirmPassInput, setConfirmPassInput] = useState('');
+  const [passFeedback, setPassFeedback] = useState('');
+  const [announcementDraft, setAnnouncementDraft] = useState('');
+
+  // Persist to localStorage on every state update
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
     } catch {
-      // Ignore storage errors
+      // Ignore storage quota errors
     }
-  }, [state]);
+  }, [appState]);
 
+  // Live clock for countdown timer
   useEffect(() => {
-    const id = window.setInterval(() => setNowMs(Date.now()), 1000);
-    return () => window.clearInterval(id);
+    const id = setInterval(() => setNowMs(Date.now()), 1000);
+    return () => clearInterval(id);
   }, []);
 
+  // Auto-dismiss toast
   useEffect(() => {
-    if (tab === "chat") chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    if (tab === "ai") aiEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [tab, state.messages.length, aiMessages.length]);
+    if (!toast) return;
+    const t = setTimeout(() => setToast(null), 3200);
+    return () => clearTimeout(t);
+  }, [toast]);
 
+  const notify = (msg, tone = 'gold') => setToast({ msg, tone, id: Date.now() });
+
+  // Active workspace & theme
+  const club = appState.clubs[activeClubKey] || appState.clubs.il;
+  const isGMMode = activeClubKey === 'gm';
+  const theme = THEMES[appState.themeKey] || THEMES.royal;
+
+  // Keep announcement draft synced when switching workspace
+  useEffect(() => {
+    setAnnouncementDraft(club.announcement);
+  }, [activeClubKey, club.announcement]);
+
+  // Helper to update only the active club workspace
+  const updateClub = (updater) => {
+    setAppState((prev) => {
+      const currentClub = prev.clubs[activeClubKey];
+      const nextClub = typeof updater === 'function' ? updater(currentClub) : updater;
+      return {
+        ...prev,
+        clubs: {
+          ...prev.clubs,
+          [activeClubKey]: nextClub
+        }
+      };
+    });
+  };
+
+  // Current authenticated user record
+  const authBase = session ? SQUAD_ROSTER.find((p) => p.id === session.playerId) || null : null;
   const currentUser = session
-    ? state.players.find((p) => p.id === session.playerId) || null
+    ? club.players.find((p) => p.id === session.playerId) || appState.clubs.il.players.find((p) => p.id === session.playerId) || null
     : null;
-  const isAdmin = Boolean(session?.isAdminSession && currentUser?.isAdmin);
+  const isAdmin = Boolean(authBase?.isAdmin);
 
-  const orangeCapHolder = [...state.players].sort((a, b) => b.runs - a.runs)[0];
-  const purpleCapHolder = [...state.players].sort((a, b) => b.wickets - a.wickets)[0];
+  // Derived metrics for active workspace
+  const financeSummary = useMemo(() => {
+    const credits = club.treasury.filter((t) => t.type === 'CREDIT').reduce((s, t) => s + t.amount, 0);
+    const fines = club.treasury.filter((t) => t.type === 'FINE').reduce((s, t) => s + t.amount, 0);
+    const advances = club.treasury.filter((t) => t.type === 'ADVANCE').reduce((s, t) => s + t.amount, 0);
+    const expenses = club.treasury.filter((t) => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0);
+    return { credits, fines, advances, expenses, net: credits + fines + advances - expenses };
+  }, [club.treasury]);
 
-  const totalCredits = state.treasury
-    .filter((t) => t.type === "CREDIT")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const totalFines = state.treasury
-    .filter((t) => t.type === "FINE")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const totalExpenses = state.treasury
-    .filter((t) => t.type === "EXPENSE")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const totalAdvances = state.treasury
-    .filter((t) => t.type === "ADVANCE")
-    .reduce((sum, t) => sum + t.amount, 0);
-  const clubNetBalance = totalCredits + totalFines + totalAdvances - totalExpenses;
+  const winRatePct = useMemo(() => {
+    if (!club.recentResults || club.recentResults.length === 0) return 0;
+    const wins = club.recentResults.filter((r) => r === 'W').length;
+    return Math.round((wins / club.recentResults.length) * 100);
+  }, [club.recentResults]);
 
-  const countdownTargetMs = (() => {
-    if (state.scheduledMatch && state.scheduledMatch.dateTime) {
-      const parsed = new Date(state.scheduledMatch.dateTime).getTime();
-      if (!Number.isNaN(parsed) && parsed > nowMs) return parsed;
-    }
-    return new Date(DEFAULT_LAUNCH_TIME).getTime();
-  })();
-  const countdownDiff = Math.max(0, countdownTargetMs - nowMs);
-  const cdSec = Math.floor(countdownDiff / 1000);
-  const cdDays = String(Math.floor(cdSec / 86400)).padStart(2, "0");
-  const cdHours = String(Math.floor((cdSec % 86400) / 3600)).padStart(2, "0");
-  const cdMins = String(Math.floor((cdSec % 3600) / 60)).padStart(2, "0");
-  const cdSecs = String(cdSec % 60).padStart(2, "0");
+  const orangeCap = useMemo(() => {
+    const sorted = [...club.players].sort((a, b) => b.runs - a.runs);
+    return sorted[0] && sorted[0].runs > 0 ? sorted[0] : null;
+  }, [club.players]);
 
-  const speak = (text: string) => {
-    if (!voiceOutput) return;
-    if (typeof window !== "undefined" && "speechSynthesis" in window) {
-      try {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = "en-IN";
-        u.rate = 1.05;
-        window.speechSynthesis.speak(u);
-      } catch {
-        // Ignore TTS failure
-      }
-    }
-  };
+  const purpleCap = useMemo(() => {
+    const sorted = [...club.players].sort((a, b) => b.wickets - a.wickets);
+    return sorted[0] && sorted[0].wickets > 0 ? sorted[0] : null;
+  }, [club.players]);
 
-  const requireAdminPin = (title: string, action: () => void) => {
-    if (!currentUser?.isAdmin) return;
-    pendingAdminActionRef.current = action;
-    setPinModalTitle(title);
-    setPinInput("");
-    setPinError("");
-  };
+  const rankedPlayers = useMemo(() => {
+    const arr = [...club.players];
+    if (lbTab === 'batting') return arr.sort((a, b) => b.runs - a.runs || a.name.localeCompare(b.name));
+    if (lbTab === 'bowling') return arr.sort((a, b) => b.wickets - a.wickets || a.name.localeCompare(b.name));
+    return arr.sort((a, b) => calcPoints(b) - calcPoints(a) || a.name.localeCompare(b.name));
+  }, [club.players, lbTab]);
 
-  const submitAdminPin = (e: React.FormEvent) => {
+  const scheduledCountdown = useMemo(() => {
+    if (!club.scheduledMatch?.dateTime) return null;
+    const target = new Date(club.scheduledMatch.dateTime).getTime();
+    if (Number.isNaN(target)) return null;
+    const diff = Math.max(0, target - nowMs);
+    const sec = Math.floor(diff / 1000);
+    return {
+      days: String(Math.floor(sec / 86400)).padStart(2, '0'),
+      hrs: String(Math.floor((sec % 86400) / 3600)).padStart(2, '0'),
+      min: String(Math.floor((sec % 3600) / 60)).padStart(2, '0'),
+      sec: String(sec % 60).padStart(2, '0')
+    };
+  }, [club.scheduledMatch, nowMs]);
+
+  const selectedProfile = useMemo(
+    () => club.players.find((p) => p.id === selectedProfileId) || null,
+    [club.players, selectedProfileId]
+  );
+
+  // ============================================================================
+  // 5. AUTHENTICATION, ADMIN PIN & GANESH MANDIR PORTAL HANDLERS
+  // ============================================================================
+  const handleLogin = (e) => {
     e.preventDefault();
-    if (pinInput.trim() !== ADMIN_PIN) {
-      setPinError("Incorrect Admin PIN. Try again.");
+    const res = verifyCredentials(loginPlayerId, loginPassword, appState.customPasswords);
+    if (!res.ok) {
+      setLoginError('Incorrect password. Please try again.');
       return;
     }
-    const fn = pendingAdminActionRef.current;
-    pendingAdminActionRef.current = null;
-    setPinModalTitle("");
-    setPinInput("");
-    setPinError("");
-    if (fn) fn();
-  };
-
-  const handleLogin = (e: React.FormEvent) => {
-    e.preventDefault();
-    const player = state.players.find((p) => p.id === loginPlayerId);
-    if (!player) {
-      setLoginError("Select a valid squad member.");
-      return;
-    }
-    const check = verifyPlayerPassword(player, loginPassword, state.customPasswords);
-    if (!check.ok) {
-      setLoginError("Wrong password! Check your diary password and try again.");
-      return;
-    }
-    setSession({ playerId: player.id, isAdminSession: check.asAdmin });
-    setLoginPassword("");
-    setLoginError("");
-    setTab("home");
-    if (player.finesDue > 0) {
-      setShowDuePopup(true);
-    }
+    setSession({ playerId: loginPlayerId, isAdminSession: res.asAdmin });
+    setLoginPassword('');
+    setLoginError('');
+    setActiveClubKey('il');
+    setActiveTab('dashboard');
+    const member = SQUAD_ROSTER.find((p) => p.id === loginPlayerId);
+    notify(`Welcome back, ${member?.name || 'Legend'}!`, 'gold');
   };
 
   const handleLogout = () => {
     setSession(null);
     setGmUnlocked(false);
-    setShowDuePopup(false);
-    setTab("home");
+    setActiveClubKey('il');
+    setActiveTab('dashboard');
+    setMoreDrawerOpen(false);
   };
 
-  const handleChangeNormalPass = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!currentUser) return;
-    const trimmed = newNormalPass.trim();
-    if (trimmed.length < 4) {
-      setPassNotice("Password must be at least 4 characters.");
+  const requireAdminPin = (title, onConfirm) => {
+    if (!isAdmin) {
+      notify('Admin access required for this action.', 'rose');
       return;
     }
-    setState((prev) => ({
-      ...prev,
-      customPasswords: {
-        ...prev.customPasswords,
-        [currentUser.id]: trimmed,
-      },
-    }));
-    setNewNormalPass("");
-    setPassNotice("Normal password updated! (Admin passwords remain locked.)");
+    setPinInput('');
+    setPinError('');
+    setPinModal({ open: true, title, onConfirm });
+  };
+
+  const handlePinSubmit = (e) => {
+    e.preventDefault();
+    if (pinInput.trim() !== ADMIN_PIN) {
+      setPinError('Incorrect Admin PIN.');
+      return;
+    }
+    const fn = pinModal.onConfirm;
+    setPinModal({ open: false, title: '', onConfirm: null });
+    setPinInput('');
+    setPinError('');
+    if (fn) fn();
+  };
+
+  const openGaneshMandirGate = () => {
+    if (!authBase?.isGM) {
+      notify('Ganesh Mandir Zone is restricted to the 8 authorized G.M squad members.', 'rose');
+      return;
+    }
+    if (gmUnlocked) {
+      setActiveClubKey((prev) => (prev === 'gm' ? 'il' : 'gm'));
+      setActiveTab('dashboard');
+      return;
+    }
+    setGmUnlockPass('');
+    setGmUnlockError('');
+    setGmModalOpen(true);
   };
 
   const handleCrestTap = () => {
-    crestTapCountRef.current += 1;
-    if (crestTapTimerRef.current !== null) {
-      window.clearTimeout(crestTapTimerRef.current);
-    }
-    if (crestTapCountRef.current >= 3) {
-      crestTapCountRef.current = 0;
-      if (gmUnlocked) {
-        setTab("gm");
-      } else {
-        const gmPlayers = state.players.filter((p) => p.isGM);
-        if (currentUser?.isGM) {
-          setGmLoginId(currentUser.id);
-        } else if (gmPlayers[0]) {
-          setGmLoginId(gmPlayers[0].id);
-        }
-        setGmLoginPass("");
-        setGmLoginErr("");
-        setShowGmLoginModal(true);
-      }
+    crestTapsRef.current += 1;
+    if (crestTimerRef.current) clearTimeout(crestTimerRef.current);
+    if (crestTapsRef.current >= 3) {
+      crestTapsRef.current = 0;
+      openGaneshMandirGate();
       return;
     }
-    crestTapTimerRef.current = window.setTimeout(() => {
-      crestTapCountRef.current = 0;
-    }, 800);
+    crestTimerRef.current = setTimeout(() => {
+      crestTapsRef.current = 0;
+    }, 850);
   };
 
-  const handleGmUnlock = (e: React.FormEvent) => {
+  const handleGmUnlockSubmit = (e) => {
     e.preventDefault();
-    const player = state.players.find((p) => p.id === gmLoginId && p.isGM);
-    if (!player) {
-      setGmLoginErr("Only authorized G.M members can enter.");
+    if (!authBase?.isGM) {
+      setGmUnlockError('Restricted to authorized G.M squad members.');
       return;
     }
-    const check = verifyPlayerPassword(player, gmLoginPass, state.customPasswords);
-    if (!check.ok) {
-      setGmLoginErr("Invalid password. Use your same squad password.");
+    const res = verifyCredentials(authBase.id, gmUnlockPass, appState.customPasswords);
+    if (!res.ok) {
+      setGmUnlockError('Incorrect password. Please try again.');
       return;
     }
     setGmUnlocked(true);
-    setShowGmLoginModal(false);
-    setGmLoginPass("");
-    setGmLoginErr("");
-    setTab("gm");
+    setGmModalOpen(false);
+    setGmUnlockPass('');
+    setGmUnlockError('');
+    setActiveClubKey('gm');
+    setActiveTab('dashboard');
+    notify('Ganesh Mandir Cricket Club Portal Unlocked!', 'gold');
   };
 
-  const handleVotePoll = (choice: PollChoice) => {
-    if (!currentUser) return;
-    setState((prev) => {
-      const others = prev.poll.filter((v) => v.playerId !== currentUser.id);
-      return {
-        ...prev,
-        poll: [...others, { playerId: currentUser.id, playerName: currentUser.name, choice }],
-      };
-    });
+  // ============================================================================
+  // 6. CREATE MATCH WIZARD LOGIC (WORKS FOR BOTH INDORE LEGENDS & GANESH MANDIR)
+  // ============================================================================
+  const openCreateMatchWizard = () => {
+    const allIds = club.players.map((p) => p.id);
+    const { teamA, teamB } = splitBalancedTeams(club.players);
+    const lA = pickTeamLeaders(teamA);
+    const lB = pickTeamLeaders(teamB);
+
+    setWizTitle(isGMMode ? 'Ganesh Mandir Match' : 'Indore Legends Match');
+    setWizDateTime(defaultMatchDateTime());
+    setWizOvers(10);
+    setWizTeamAName(isGMMode ? 'GM Warriors' : 'Legends XI');
+    setWizTeamBName(isGMMode ? 'GM Strikers' : 'Strikers XI');
+    setWizSelectedIds(allIds);
+    setWizTeamAIds(teamA.map((p) => p.id));
+    setWizTeamBIds(teamB.map((p) => p.id));
+    setWizTeamACap(lA.captain);
+    setWizTeamAVC(lA.viceCaptain);
+    setWizTeamBCap(lB.captain);
+    setWizTeamBVC(lB.viceCaptain);
+    setWizTossWinner('');
+    setWizTossDecision('BAT');
+    setCoinSide('');
+    setWizChecklist([
+      { id: 'c1', label: 'Wind Balls (2+ Extra)', done: false },
+      { id: 'c2', label: 'Bats & Grips Ready', done: false },
+      { id: 'c3', label: 'Stumps & Bails Packed', done: false },
+      { id: 'c4', label: 'Drinking Water', done: false }
+    ]);
+    setCreateMatchOpen(true);
   };
 
-  const flipCoin = (target: "match" | "gm") => {
-    setCoinFlipping(true);
-    window.setTimeout(() => {
-      const side = Math.random() < 0.5 ? "HEADS" : "TAILS";
-      if (target === "match") {
-        setCoinResult(side);
-        if (state.scheduledMatch) {
-          const winner =
-            Math.random() < 0.5
-              ? state.scheduledMatch.teamAName
-              : state.scheduledMatch.teamBName;
-          setState((prev) =>
-            prev.scheduledMatch
-              ? {
-                  ...prev,
-                  scheduledMatch: { ...prev.scheduledMatch, tossWinner: winner },
-                }
-              : prev
-          );
-        }
+  const toggleWizardPlayer = (playerId) => {
+    const already = wizSelectedIds.includes(playerId);
+    let nextSelected;
+    if (already) {
+      nextSelected = wizSelectedIds.filter((id) => id !== playerId);
+      setWizTeamAIds((prev) => prev.filter((id) => id !== playerId));
+      setWizTeamBIds((prev) => prev.filter((id) => id !== playerId));
+    } else {
+      nextSelected = [...wizSelectedIds, playerId];
+      if (wizTeamAIds.length <= wizTeamBIds.length) {
+        setWizTeamAIds((prev) => [...prev, playerId]);
       } else {
-        setGmCoinResult(side);
+        setWizTeamBIds((prev) => [...prev, playerId]);
       }
-      setCoinFlipping(false);
-    }, 750);
+    }
+    setWizSelectedIds(nextSelected);
   };
 
-  const createScheduledMatch = () => {
-    const selected = state.players.filter((p) => wizSelectedIds.includes(p.id));
-    if (selected.length < 4) return;
-    const { teamA, teamB } = splitTeamsByRanking(selected);
-    const capA = autoPickCaptains(teamA);
-    const capB = autoPickCaptains(teamB);
+  const runAutoSplitWizard = () => {
+    const selectedPlayers = club.players.filter((p) => wizSelectedIds.includes(p.id));
+    if (selectedPlayers.length < 4) {
+      notify('Select at least 4 players (2 per side).', 'rose');
+      return;
+    }
+    const { teamA, teamB } = splitBalancedTeams(selectedPlayers);
+    const lA = pickTeamLeaders(teamA);
+    const lB = pickTeamLeaders(teamB);
+    setWizTeamAIds(teamA.map((p) => p.id));
+    setWizTeamBIds(teamB.map((p) => p.id));
+    setWizTeamACap(lA.captain);
+    setWizTeamAVC(lA.viceCaptain);
+    setWizTeamBCap(lB.captain);
+    setWizTeamBVC(lB.viceCaptain);
+    notify('Fair teams & captains auto-assigned!', 'emerald');
+  };
 
-    const scheduled: ScheduledMatch = {
-      id: uid("sch"),
-      title: wizTitle.trim() || "Indore Legends Match",
-      dateTime: wizDateTime || threeDaysFromNowIso(),
-      overs: Math.max(1, Math.min(50, wizOvers || 10)),
-      selectedPlayerIds: selected.map((p) => p.id),
-      teamAName: wizTeamAName.trim() || "Legends XI",
-      teamBName: wizTeamBName.trim() || "Strikers XI",
-      teamAIds: teamA.map((p) => p.id),
-      teamBIds: teamB.map((p) => p.id),
-      teamACaptain: capA.captain,
-      teamAViceCaptain: capA.viceCaptain,
-      teamBCaptain: capB.captain,
-      teamBViceCaptain: capB.viceCaptain,
-      tossWinner: "",
-      tossDecision: "",
-      checklist: [
-        { id: "c1", label: "Wind Balls (2+ Extra)", done: false },
-        { id: "c2", label: "Bats and Grip Tape Ready", done: false },
-        { id: "c3", label: "Stumps and Bails Packed", done: false },
-        { id: "c4", label: "Drinking Water Bottles", done: false },
-        { id: "c5", label: "Ground and Boundary Marked", done: false },
-      ],
+  const movePlayerBetweenTeams = (playerId, fromTeam) => {
+    if (fromTeam === 'A') {
+      setWizTeamAIds((prev) => prev.filter((id) => id !== playerId));
+      setWizTeamBIds((prev) => [...prev, playerId]);
+    } else {
+      setWizTeamBIds((prev) => prev.filter((id) => id !== playerId));
+      setWizTeamAIds((prev) => [...prev, playerId]);
+    }
+  };
+
+  const flipDigitalCoin = () => {
+    setCoinSpinning(true);
+    setTimeout(() => {
+      const side = Math.random() < 0.5 ? 'HEADS' : 'TAILS';
+      const winner = Math.random() < 0.5 ? (wizTeamAName.trim() || 'Team A') : (wizTeamBName.trim() || 'Team B');
+      setCoinSide(side);
+      setWizTossWinner(winner);
+      setCoinSpinning(false);
+    }, 700);
+  };
+
+  const buildScheduledMatchObject = () => {
+    const tAName = wizTeamAName.trim() || 'Team A';
+    const tBName = wizTeamBName.trim() || 'Team B';
+    const teamAPlayers = club.players.filter((p) => wizTeamAIds.includes(p.id));
+    const teamBPlayers = club.players.filter((p) => wizTeamBIds.includes(p.id));
+
+    return {
+      id: uid('sch'),
+      title: wizTitle.trim() || (isGMMode ? 'Ganesh Mandir Match' : 'Indore Legends Match'),
+      dateTime: wizDateTime || defaultMatchDateTime(),
+      overs: Math.max(1, Math.min(50, Number(wizOvers) || 10)),
+      teamAName: tAName,
+      teamBName: tBName,
+      teamAIds: teamAPlayers.map((p) => p.id),
+      teamBIds: teamBPlayers.map((p) => p.id),
+      teamACaptain: wizTeamACap || teamAPlayers[0]?.name || 'TBD',
+      teamAViceCaptain: wizTeamAVC || teamAPlayers[1]?.name || teamAPlayers[0]?.name || 'TBD',
+      teamBCaptain: wizTeamBCap || teamBPlayers[0]?.name || 'TBD',
+      teamBViceCaptain: wizTeamBVC || teamBPlayers[1]?.name || teamBPlayers[0]?.name || 'TBD',
+      tossWinner: wizTossWinner,
+      tossDecision: wizTossDecision,
+      checklist: wizChecklist
     };
-
-    setState((prev) => ({ ...prev, scheduledMatch: scheduled }));
-    setShowCreateWizard(false);
-    setCoinResult("");
   };
 
-  const reRollScheduledTeamsAndCaptains = () => {
-    if (!state.scheduledMatch) return;
-    const selected = state.players.filter((p) =>
-      state.scheduledMatch?.selectedPlayerIds.includes(p.id)
-    );
-    const { teamA, teamB } = splitTeamsByRanking(selected);
-    const capA = autoPickCaptains(teamA);
-    const capB = autoPickCaptains(teamB);
-
-    setState((prev) =>
-      prev.scheduledMatch
-        ? {
-            ...prev,
-            scheduledMatch: {
-              ...prev.scheduledMatch,
-              teamAIds: teamA.map((p) => p.id),
-              teamBIds: teamB.map((p) => p.id),
-              teamACaptain: capA.captain,
-              teamAViceCaptain: capA.viceCaptain,
-              teamBCaptain: capB.captain,
-              teamBViceCaptain: capB.viceCaptain,
-            },
-          }
-        : prev
-    );
+  const handleSaveScheduledMatch = () => {
+    if (wizTeamAIds.length < 2 || wizTeamBIds.length < 2) {
+      notify('Each team needs at least 2 players.', 'rose');
+      return;
+    }
+    const scheduled = buildScheduledMatchObject();
+    updateClub((prev) => ({ ...prev, scheduledMatch: scheduled }));
+    setCreateMatchOpen(false);
+    setMatchSubTab('upcoming');
+    setActiveTab('matches');
+    notify('Match scheduled! Countdown is now live on Dashboard.', 'emerald');
   };
 
-  const startLiveMatchFromScheduled = () => {
-    const sch = state.scheduledMatch;
+  const launchLiveMatchFromScheduled = (sch) => {
     if (!sch) return;
-    const teamAPlayers = state.players
-      .filter((p) => sch.teamAIds.includes(p.id))
-      .map((p) => p.name);
-    const teamBPlayers = state.players
-      .filter((p) => sch.teamBIds.includes(p.id))
-      .map((p) => p.name);
+    const teamAPlayers = club.players.filter((p) => sch.teamAIds.includes(p.id)).map((p) => p.name);
+    const teamBPlayers = club.players.filter((p) => sch.teamBIds.includes(p.id)).map((p) => p.name);
 
     const aBatsFirst =
       !sch.tossWinner ||
-      (sch.tossWinner === sch.teamAName && sch.tossDecision !== "BOWL") ||
-      (sch.tossWinner === sch.teamBName && sch.tossDecision === "BOWL");
+      (sch.tossWinner === sch.teamAName && sch.tossDecision !== 'BOWL') ||
+      (sch.tossWinner === sch.teamBName && sch.tossDecision === 'BOWL');
 
     const battingTeam = aBatsFirst ? sch.teamAName : sch.teamBName;
     const bowlingTeam = aBatsFirst ? sch.teamBName : sch.teamAName;
     const battingPlayers = aBatsFirst ? teamAPlayers : teamBPlayers;
     const bowlingPlayers = aBatsFirst ? teamBPlayers : teamAPlayers;
 
-    const striker = battingPlayers[0] || "Batter 1";
-    const nonStriker = battingPlayers[1] || "Batter 2";
-    const bowler = bowlingPlayers[0] || "Bowler 1";
-
-    const initBatters: Record<string, InningsBatterStat> = {};
-    battingPlayers.forEach((name) => {
-      initBatters[name] = {
-        name,
-        runs: 0,
-        balls: 0,
-        fours: 0,
-        sixes: 0,
-        out: false,
-        dismissal: "",
-        retiredHurt: false,
-      };
+    const batters = {};
+    battingPlayers.forEach((n) => {
+      batters[n] = { name: n, runs: 0, balls: 0, fours: 0, sixes: 0, out: false, retiredHurt: false, dismissal: '' };
+    });
+    const bowlers = {};
+    bowlingPlayers.forEach((n) => {
+      bowlers[n] = { name: n, balls: 0, runs: 0, wickets: 0 };
     });
 
-    const initBowlers: Record<string, InningsBowlerStat> = {};
-    bowlingPlayers.forEach((name) => {
-      initBowlers[name] = { name, balls: 0, runs: 0, wickets: 0 };
-    });
-
-    const live: LiveMatch = {
-      id: uid("live"),
+    const live = {
+      id: uid('live'),
       title: sch.title,
       totalOvers: sch.overs,
       innings: 1,
@@ -1254,155 +936,123 @@ export default function App() {
       teamBPlayers,
       firstInningsScore: null,
       firstInningsWickets: null,
+      firstInningsBatters: {},
+      firstInningsBowlers: {},
       runs: 0,
       wickets: 0,
       balls: 0,
       target: null,
-      striker,
-      nonStriker,
-      bowler,
+      striker: battingPlayers[0] || 'Batter 1',
+      nonStriker: battingPlayers[1] || 'Batter 2',
+      bowler: bowlingPlayers[0] || 'Bowler 1',
       freeHitActive: false,
       isCompleted: false,
       isTied: false,
-      resultText: "",
-      batters: initBatters,
-      bowlers: initBowlers,
+      resultText: '',
+      batters,
+      bowlers,
       history: [],
       tossInfo: sch.tossWinner
-        ? sch.tossWinner + " won toss and chose to " + (sch.tossDecision || "BAT")
-        : "Toss skipped",
-      captainsInfo:
-        sch.teamAName +
-        " (C: " +
-        sch.teamACaptain +
-        ", VC: " +
-        sch.teamAViceCaptain +
-        ") vs " +
-        sch.teamBName +
-        " (C: " +
-        sch.teamBCaptain +
-        ", VC: " +
-        sch.teamBViceCaptain +
-        ")",
+        ? `${sch.tossWinner} won toss & chose to ${sch.tossDecision || 'BAT'}`
+        : 'Toss not recorded',
+      captainsInfo: `${sch.teamAName} (C: ${sch.teamACaptain}, VC: ${sch.teamAViceCaptain}) vs ${sch.teamBName} (C: ${sch.teamBCaptain}, VC: ${sch.teamBViceCaptain})`
     };
 
-    setState((prev) => ({ ...prev, liveMatch: live }));
-    setUmpireBanner("PLAY! Innings 1 underway.");
-    speak("Match started! Play!");
+    updateClub((prev) => ({ ...prev, scheduledMatch: sch, liveMatch: live }));
+    setCreateMatchOpen(false);
+    setMatchSubTab('live');
+    setActiveTab('matches');
+    setUmpireBanner('PLAY! Innings 1 underway.');
+    notify('Live Match Scorer started!', 'emerald');
+    speakText('Match started! Play!');
   };
 
-  const computeLiveMvp = (m: LiveMatch): string => {
-    const points: Record<string, number> = {};
-    Object.values(m.batters).forEach((b) => {
-      points[b.name] = (points[b.name] || 0) + b.runs + b.fours * 2 + b.sixes * 4;
-    });
-    Object.values(m.bowlers).forEach((bw) => {
-      points[bw.name] = (points[bw.name] || 0) + bw.wickets * 25;
-    });
-    let bestName = "TBD";
-    let bestPts = -1;
-    Object.entries(points).forEach(([name, pts]) => {
-      if (pts > bestPts) {
-        bestPts = pts;
+  // ============================================================================
+  // 7. IPL-STYLE LIVE MATCH SCORING ENGINE
+  // ============================================================================
+  const speakText = (text) => {
+    if (!voiceTts || typeof window === 'undefined' || !('speechSynthesis' in window)) return;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'en-IN';
+      u.rate = 1.05;
+      window.speechSynthesis.speak(u);
+    } catch {
+      // ignore speech synthesis errors
+    }
+  };
+
+  const computeLiveMvp = (m) => {
+    if (!m) return 'TBD';
+    const pts = {};
+    const addBat = (rec) => {
+      Object.values(rec || {}).forEach((b) => {
+        pts[b.name] = (pts[b.name] || 0) + b.runs + b.fours * 2 + b.sixes * 4;
+      });
+    };
+    const addBowl = (rec) => {
+      Object.values(rec || {}).forEach((bw) => {
+        pts[bw.name] = (pts[bw.name] || 0) + bw.wickets * 25;
+      });
+    };
+    addBat(m.firstInningsBatters);
+    addBowl(m.firstInningsBowlers);
+    addBat(m.batters);
+    addBowl(m.bowlers);
+
+    let bestName = 'TBD';
+    let bestPts = 0;
+    Object.entries(pts).forEach(([name, p]) => {
+      if (p > bestPts) {
+        bestPts = p;
         bestName = name;
       }
     });
-    return bestPts > 0 ? bestName + " (" + bestPts + " MVP pts)" : "TBD";
+    return bestPts > 0 ? `${bestName} (${bestPts} pts)` : 'TBD';
   };
 
-  const buildWhatsappScorecard = (m: LiveMatch): string => {
+  const buildWhatsappScorecard = (m) => {
     const topBat = Object.values(m.batters)
       .filter((b) => b.balls > 0 || b.out)
       .sort((a, b) => b.runs - a.runs)
       .slice(0, 4)
-      .map(
-        (b) =>
-          "- " +
-          b.name +
-          ": " +
-          b.runs +
-          "(" +
-          b.balls +
-          ") [4s:" +
-          b.fours +
-          ", 6s:" +
-          b.sixes +
-          "]"
-      )
-      .join("\n");
-
+      .map((b) => `- ${b.name}: ${b.runs}(${b.balls}) [4s:${b.fours}, 6s:${b.sixes}]`)
+      .join('\n');
     const topBowl = Object.values(m.bowlers)
       .filter((b) => b.balls > 0)
       .sort((a, b) => b.wickets - a.wickets)
       .slice(0, 3)
-      .map(
-        (b) =>
-          "- " +
-          b.name +
-          ": " +
-          b.wickets +
-          "/" +
-          b.runs +
-          " (" +
-          formatOvers(b.balls) +
-          " ov)"
-      )
-      .join("\n");
-
-    const firstInnLine =
-      m.firstInningsScore !== null
-        ? "1st Innings: " +
-          m.bowlingTeam +
-          " " +
-          m.firstInningsScore +
-          "/" +
-          (m.firstInningsWickets ?? 0) +
-          "\n"
-        : "";
+      .map((b) => `- ${b.name}: ${b.wickets}/${b.runs} (${formatOvers(b.balls)} ov)`)
+      .join('\n');
 
     return (
-      "INDORE LEGENDS SCORECARD\n" +
-      m.title +
-      " (" +
-      (m.isSuperOver ? "SUPER OVER" : m.totalOvers + " Overs") +
-      ")\n" +
-      m.tossInfo +
-      "\n" +
-      firstInnLine +
-      m.battingTeam +
-      ": " +
-      m.runs +
-      "/" +
-      m.wickets +
-      " (" +
-      formatOvers(m.balls) +
-      "/" +
-      m.totalOvers +
-      " ov)\n" +
-      (m.resultText ? "Result: " + m.resultText + "\n" : "") +
-      "Auto MVP: " +
-      computeLiveMvp(m) +
-      "\n\nTop Batters:\n" +
-      (topBat || "No batters yet") +
-      "\n\nTop Bowlers:\n" +
-      (topBowl || "No bowlers yet")
+      `${club.shortName.toUpperCase()} SCORECARD\n` +
+      `${m.title} (${m.isSuperOver ? 'SUPER OVER' : `${m.totalOvers} Overs`})\n` +
+      `${m.tossInfo}\n` +
+      (m.firstInningsScore !== null
+        ? `1st Innings: ${m.bowlingTeam} ${m.firstInningsScore}/${m.firstInningsWickets}\n`
+        : '') +
+      `${m.battingTeam}: ${m.runs}/${m.wickets} (${formatOvers(m.balls)}/${m.totalOvers} ov)\n` +
+      (m.resultText ? `Result: ${m.resultText}\n` : '') +
+      `Auto MVP: ${computeLiveMvp(m)}\n\n` +
+      `Top Batters:\n${topBat || 'None yet'}\n\n` +
+      `Top Bowlers:\n${topBowl || 'None yet'}`
     );
   };
 
-  const recordLiveBall = (
-    runsScored: number,
-    options?: { isWide?: boolean; isNoBall?: boolean; isWicket?: boolean }
-  ) => {
-    const m = state.liveMatch;
+  const recordBall = (runsScored, opts = {}) => {
+    const m = club.liveMatch;
     if (!m || m.isCompleted) return;
 
-    const isWide = Boolean(options?.isWide);
-    const isNoBall = Boolean(options?.isNoBall);
-    const isWicket = Boolean(options?.isWicket);
+    const isWide = Boolean(opts.isWide);
+    const isNoBall = Boolean(opts.isNoBall);
+    const isWicket = Boolean(opts.isWicket);
 
-    if (isWicket && m.freeHitActive && wicketType !== "Run Out") {
-      setUmpireBanner("FREE HIT! Only Run Out allowed!");
-      speak("Not out! It is a Free Hit!");
+    if (isWicket && m.freeHitActive && wicketType !== 'Run Out') {
+      setUmpireBanner('FREE HIT! Only Run Out is allowed!');
+      notify('FREE HIT active — only Run Out is allowed!', 'gold');
+      speakText('Not out! Free hit!');
       return;
     }
 
@@ -1417,146 +1067,117 @@ export default function App() {
     const nextBalls = isLegal ? m.balls + 1 : m.balls;
     const nextFreeHit = isNoBall ? true : isLegal ? false : m.freeHitActive;
 
-    const updatedBatters = { ...m.batters };
-    const prevStrikerStat = updatedBatters[m.striker] || {
+    const batters = { ...m.batters };
+    const st = batters[m.striker] || {
       name: m.striker,
       runs: 0,
       balls: 0,
       fours: 0,
       sixes: 0,
       out: false,
-      dismissal: "",
       retiredHurt: false,
+      dismissal: ''
     };
-    const batterRunsAdded = isWide ? 0 : runsScored;
-    const newBatterRuns = prevStrikerStat.runs + batterRunsAdded;
-
-    updatedBatters[m.striker] = {
-      ...prevStrikerStat,
+    const batterAdd = isWide ? 0 : runsScored;
+    const newBatterRuns = st.runs + batterAdd;
+    batters[m.striker] = {
+      ...st,
       runs: newBatterRuns,
-      balls: isLegal ? prevStrikerStat.balls + 1 : prevStrikerStat.balls,
-      fours: !isWide && runsScored === 4 ? prevStrikerStat.fours + 1 : prevStrikerStat.fours,
-      sixes: !isWide && runsScored === 6 ? prevStrikerStat.sixes + 1 : prevStrikerStat.sixes,
-      out: isWicket ? true : prevStrikerStat.out,
-      dismissal: isWicket ? wicketType + " b " + m.bowler : prevStrikerStat.dismissal,
+      balls: isLegal ? st.balls + 1 : st.balls,
+      fours: !isWide && runsScored === 4 ? st.fours + 1 : st.fours,
+      sixes: !isWide && runsScored === 6 ? st.sixes + 1 : st.sixes,
+      out: isWicket ? true : st.out,
+      retiredHurt: false,
+      dismissal: isWicket ? `${wicketType} b ${m.bowler}` : st.dismissal
     };
 
-    const updatedBowlers = { ...m.bowlers };
-    const prevBowlerStat = updatedBowlers[m.bowler] || {
-      name: m.bowler,
-      balls: 0,
-      runs: 0,
-      wickets: 0,
-    };
-    const newBowlerWickets =
-      isWicket && wicketType !== "Run Out" ? prevBowlerStat.wickets + 1 : prevBowlerStat.wickets;
-    updatedBowlers[m.bowler] = {
-      ...prevBowlerStat,
-      balls: isLegal ? prevBowlerStat.balls + 1 : prevBowlerStat.balls,
-      runs: prevBowlerStat.runs + totalBallRuns,
-      wickets: newBowlerWickets,
+    const bowlers = { ...m.bowlers };
+    const bw = bowlers[m.bowler] || { name: m.bowler, balls: 0, runs: 0, wickets: 0 };
+    const newBowlerWkts = isWicket && wicketType !== 'Run Out' ? bw.wickets + 1 : bw.wickets;
+    bowlers[m.bowler] = {
+      ...bw,
+      balls: isLegal ? bw.balls + 1 : bw.balls,
+      runs: bw.runs + totalBallRuns,
+      wickets: newBowlerWkts
     };
 
-    const event: BallEvent = {
-      id: uid("ball"),
+    const event = {
+      id: uid('ball'),
       innings: m.innings,
       over: Math.floor(m.balls / 6),
-      ballInOver: (m.balls % 6) + 1,
       runs: totalBallRuns,
       isWide,
       isNoBall,
       isWicket,
       isFreeHit: m.freeHitActive,
-      wicketType: isWicket ? wicketType : undefined,
+      wicketType: isWicket ? wicketType : '',
       batsman: m.striker,
-      bowler: m.bowler,
-      timestamp: nowTime(),
+      bowler: m.bowler
     };
 
-    const nextHistory = [event, ...m.history];
-
-    if (prevStrikerStat.runs < 100 && newBatterRuns >= 100) {
-      setMilestonePopup("CENTURY! " + m.striker + " smashes 100 runs!");
-      speak("Century! " + m.striker + " reaches one hundred runs!");
-    } else if (prevStrikerStat.runs < 50 && newBatterRuns >= 50) {
-      setMilestonePopup("HALF-CENTURY! " + m.striker + " hits 50!");
-      speak("Fifty! Half century for " + m.striker + "!");
-    } else if (isWicket && wicketType !== "Run Out") {
-      const sameBowlerLast3 = nextHistory
-        .filter((e) => e.innings === m.innings && e.bowler === m.bowler && !e.isWide && !e.isNoBall)
-        .slice(0, 3);
-      if (sameBowlerLast3.length === 3 && sameBowlerLast3.every((e) => e.isWicket)) {
-        setMilestonePopup("HAT-TRICK! " + m.bowler + " takes 3 in 3!");
-        speak("Hat-trick for " + m.bowler + "!");
-      } else if (newBowlerWickets === 5) {
-        setMilestonePopup("5-WICKET HAUL! " + m.bowler + " takes 5 wickets!");
-      } else if (newBowlerWickets === 3) {
-        setMilestonePopup("3-WICKET HAUL! " + m.bowler + " is on fire!");
-      }
+    // Milestone detection
+    if (st.runs < 100 && newBatterRuns >= 100) {
+      setMilestoneBanner(`CENTURY! ${m.striker} reaches 100 runs!`);
+      speakText(`Century for ${m.striker}!`);
+    } else if (st.runs < 50 && newBatterRuns >= 50) {
+      setMilestoneBanner(`HALF-CENTURY! ${m.striker} hits 50!`);
+      speakText(`Fifty for ${m.striker}!`);
+    } else if (isWicket && wicketType !== 'Run Out' && (newBowlerWkts === 3 || newBowlerWkts === 5)) {
+      setMilestoneBanner(`${newBowlerWkts}-WICKET HAUL! ${m.bowler} is on fire!`);
     }
 
     let nextStriker = m.striker;
     let nextNonStriker = m.nonStriker;
     if (isWicket) {
-      const nextAvailable = m.battingPlayers.find(
-        (name) =>
-          name !== nextNonStriker &&
-          name !== m.striker &&
-          !updatedBatters[name]?.out &&
-          !updatedBatters[name]?.retiredHurt
+      const nextBatter = m.battingPlayers.find(
+        (n) => n !== nextNonStriker && n !== m.striker && !batters[n]?.out && !batters[n]?.retiredHurt
       );
-      if (nextAvailable) nextStriker = nextAvailable;
+      if (nextBatter) nextStriker = nextBatter;
     } else if (runsScored % 2 === 1) {
-      const temp = nextStriker;
-      nextStriker = nextNonStriker;
-      nextNonStriker = temp;
+      [nextStriker, nextNonStriker] = [nextNonStriker, nextStriker];
     }
 
     if (isLegal && nextBalls % 6 === 0) {
-      const temp = nextStriker;
-      nextStriker = nextNonStriker;
-      nextNonStriker = temp;
+      [nextStriker, nextNonStriker] = [nextNonStriker, nextStriker];
     }
 
     const targetReached = m.innings === 2 && m.target !== null && nextRuns >= m.target;
-    const inningsEnded = nextBalls >= maxBalls || nextWickets >= maxWickets || targetReached;
+    const ended = nextBalls >= maxBalls || nextWickets >= maxWickets || targetReached;
 
     let isCompleted = false;
     let isTied = false;
     let resultText = m.resultText;
 
-    if (inningsEnded && m.innings === 2 && m.target !== null) {
+    if (ended && m.innings === 2 && m.target !== null) {
       isCompleted = true;
       if (nextRuns >= m.target) {
-        const wktsLeft = Math.max(1, maxWickets - nextWickets);
-        resultText = m.battingTeam + " won by " + wktsLeft + " wicket(s)!";
+        resultText = `${m.battingTeam} won by ${Math.max(1, maxWickets - nextWickets)} wicket(s)!`;
       } else if (nextRuns === m.target - 1) {
         isTied = true;
-        resultText = "MATCH TIED! Ready for Super Over!";
+        resultText = 'MATCH TIED! Launch Super Over!';
       } else {
-        const margin = m.target - 1 - nextRuns;
-        resultText = m.bowlingTeam + " won by " + margin + " run(s)!";
+        resultText = `${m.bowlingTeam} won by ${m.target - 1 - nextRuns} run(s)!`;
       }
     }
 
     if (isNoBall) {
-      setUmpireBanner("NO BALL! FREE HIT NEXT!");
-      speak("No ball! Free hit coming up!");
+      setUmpireBanner('NO BALL! FREE HIT NEXT!');
+      speakText('No ball! Free hit!');
     } else if (isWide) {
-      setUmpireBanner("WIDE BALL (+1)");
-      speak("Wide ball!");
+      setUmpireBanner('WIDE BALL (+1)');
+      speakText('Wide ball!');
     } else if (isWicket) {
-      setUmpireBanner("OUT! " + wicketType + "!");
-      speak("Out! " + wicketType + "!");
+      setUmpireBanner(`OUT! ${wicketType}`);
+      speakText(`Out! ${wicketType}`);
     } else if (runsScored === 6) {
-      setUmpireBanner("MAXIMUM SIX!");
-      speak("Huge six!");
+      setUmpireBanner('MAXIMUM SIX!');
+      speakText('Huge six!');
     } else if (runsScored === 4) {
-      setUmpireBanner("CRACKING FOUR!");
-      speak("Four runs!");
+      setUmpireBanner('CRACKING FOUR!');
+      speakText('Four runs!');
     }
 
-    setState((prev) => ({
+    updateClub((prev) => ({
       ...prev,
       liveMatch: {
         ...m,
@@ -1569,203 +1190,47 @@ export default function App() {
         isCompleted,
         isTied,
         resultText,
-        batters: updatedBatters,
-        bowlers: updatedBowlers,
-        history: nextHistory,
-      },
-    }));
-  };
-
-  const startSecondInnings = () => {
-    const m = state.liveMatch;
-    if (!m || m.innings !== 1) return;
-    const newBattingTeam = m.bowlingTeam;
-    const newBowlingTeam = m.battingTeam;
-    const newBattingPlayers = m.bowlingPlayers;
-    const newBowlingPlayers = m.battingPlayers;
-
-    const initBatters: Record<string, InningsBatterStat> = {};
-    newBattingPlayers.forEach((name) => {
-      initBatters[name] = {
-        name,
-        runs: 0,
-        balls: 0,
-        fours: 0,
-        sixes: 0,
-        out: false,
-        dismissal: "",
-        retiredHurt: false,
-      };
-    });
-
-    const initBowlers: Record<string, InningsBowlerStat> = {};
-    newBowlingPlayers.forEach((name) => {
-      initBowlers[name] = { name, balls: 0, runs: 0, wickets: 0 };
-    });
-
-    setState((prev) => ({
-      ...prev,
-      liveMatch: {
-        ...m,
-        innings: 2,
-        battingTeam: newBattingTeam,
-        bowlingTeam: newBowlingTeam,
-        battingPlayers: newBattingPlayers,
-        bowlingPlayers: newBowlingPlayers,
-        firstInningsScore: m.runs,
-        firstInningsWickets: m.wickets,
-        target: m.runs + 1,
-        runs: 0,
-        wickets: 0,
-        balls: 0,
-        striker: newBattingPlayers[0] || "Batter 1",
-        nonStriker: newBattingPlayers[1] || "Batter 2",
-        bowler: newBowlingPlayers[0] || "Bowler 1",
-        freeHitActive: false,
-        isCompleted: false,
-        isTied: false,
-        batters: initBatters,
-        bowlers: initBowlers,
-      },
-    }));
-    setUmpireBanner("2nd Innings! Target is " + (m.runs + 1));
-    speak("Second innings begins! Target is " + (m.runs + 1) + " runs!");
-  };
-
-  const launchSuperOver = () => {
-    const m = state.liveMatch;
-    if (!m) return;
-    const battingPlayers = m.teamAPlayers;
-    const bowlingPlayers = m.teamBPlayers;
-
-    const initBatters: Record<string, InningsBatterStat> = {};
-    battingPlayers.forEach((name) => {
-      initBatters[name] = {
-        name,
-        runs: 0,
-        balls: 0,
-        fours: 0,
-        sixes: 0,
-        out: false,
-        dismissal: "",
-        retiredHurt: false,
-      };
-    });
-    const initBowlers: Record<string, InningsBowlerStat> = {};
-    bowlingPlayers.forEach((name) => {
-      initBowlers[name] = { name, balls: 0, runs: 0, wickets: 0 };
-    });
-
-    setState((prev) => ({
-      ...prev,
-      liveMatch: {
-        ...m,
-        title: m.title + " - SUPER OVER",
-        totalOvers: 1,
-        innings: 1,
-        isSuperOver: true,
-        battingTeam: m.teamAName,
-        bowlingTeam: m.teamBName,
-        battingPlayers,
-        bowlingPlayers,
-        firstInningsScore: null,
-        firstInningsWickets: null,
-        runs: 0,
-        wickets: 0,
-        balls: 0,
-        target: null,
-        striker: battingPlayers[0] || "Batter 1",
-        nonStriker: battingPlayers[1] || "Batter 2",
-        bowler: bowlingPlayers[0] || "Bowler 1",
-        freeHitActive: false,
-        isCompleted: false,
-        isTied: false,
-        resultText: "",
-        batters: initBatters,
-        bowlers: initBowlers,
-        history: [],
-      },
-    }));
-    setMilestonePopup("SUPER OVER LIVE! 6 Balls - 2 Wickets Max!");
-  };
-
-  const handleRetiredHurt = () => {
-    const m = state.liveMatch;
-    if (!m || m.isCompleted) return;
-    const nextBatter = m.battingPlayers.find(
-      (name) =>
-        name !== m.striker &&
-        name !== m.nonStriker &&
-        !m.batters[name]?.out &&
-        !m.batters[name]?.retiredHurt
-    );
-    if (!nextBatter) {
-      setUmpireBanner("No replacement batter available.");
-      return;
-    }
-    setState((prev) => {
-      if (!prev.liveMatch) return prev;
-      const batters = { ...prev.liveMatch.batters };
-      if (batters[m.striker]) {
-        batters[m.striker] = { ...batters[m.striker], retiredHurt: true };
+        batters,
+        bowlers,
+        history: [event, ...m.history]
       }
-      return {
-        ...prev,
-        liveMatch: {
-          ...prev.liveMatch,
-          striker: nextBatter,
-          batters,
-        },
-      };
-    });
-    setUmpireBanner(m.striker + " Retired Hurt. " + nextBatter + " walks in.");
+    }));
   };
 
-  const handleMidOverSwap = () => {
-    const m = state.liveMatch;
-    if (!m || !swapBowlerName) return;
-    setState((prev) =>
-      prev.liveMatch
-        ? { ...prev, liveMatch: { ...prev.liveMatch, bowler: swapBowlerName } }
-        : prev
-    );
-    setShowSwapBowler(false);
-    setUmpireBanner("Mid-Over Swap: " + swapBowlerName + " takes the ball!");
-  };
-
-  const undoLiveBall = () => {
-    const m = state.liveMatch;
+  const undoLastBall = () => {
+    const m = club.liveMatch;
     if (!m || m.history.length === 0) return;
     const [last, ...rest] = m.history;
     if (last.innings !== m.innings) return;
     const wasLegal = !last.isWide && !last.isNoBall;
-    const updatedBatters = { ...m.batters };
-    if (updatedBatters[last.batsman]) {
-      const b = updatedBatters[last.batsman];
-      const batterRunDeduct = last.isWide ? 0 : last.isNoBall ? Math.max(0, last.runs - 1) : last.runs;
-      updatedBatters[last.batsman] = {
+
+    const batters = { ...m.batters };
+    if (batters[last.batsman]) {
+      const b = batters[last.batsman];
+      const batDeduct = last.isWide ? 0 : last.isNoBall ? Math.max(0, last.runs - 1) : last.runs;
+      batters[last.batsman] = {
         ...b,
-        runs: Math.max(0, b.runs - batterRunDeduct),
+        runs: Math.max(0, b.runs - batDeduct),
         balls: wasLegal ? Math.max(0, b.balls - 1) : b.balls,
+        fours: !last.isWide && batDeduct === 4 ? Math.max(0, b.fours - 1) : b.fours,
+        sixes: !last.isWide && batDeduct === 6 ? Math.max(0, b.sixes - 1) : b.sixes,
         out: last.isWicket ? false : b.out,
-        dismissal: last.isWicket ? "" : b.dismissal,
-      };
-    }
-    const updatedBowlers = { ...m.bowlers };
-    if (updatedBowlers[last.bowler]) {
-      const bw = updatedBowlers[last.bowler];
-      updatedBowlers[last.bowler] = {
-        ...bw,
-        balls: wasLegal ? Math.max(0, bw.balls - 1) : bw.balls,
-        runs: Math.max(0, bw.runs - last.runs),
-        wickets:
-          last.isWicket && last.wicketType !== "Run Out"
-            ? Math.max(0, bw.wickets - 1)
-            : bw.wickets,
+        dismissal: last.isWicket ? '' : b.dismissal
       };
     }
 
-    setState((prev) => ({
+    const bowlers = { ...m.bowlers };
+    if (bowlers[last.bowler]) {
+      const bw = bowlers[last.bowler];
+      bowlers[last.bowler] = {
+        ...bw,
+        balls: wasLegal ? Math.max(0, bw.balls - 1) : bw.balls,
+        runs: Math.max(0, bw.runs - last.runs),
+        wickets: last.isWicket && last.wicketType !== 'Run Out' ? Math.max(0, bw.wickets - 1) : bw.wickets
+      };
+    }
+
+    updateClub((prev) => ({
       ...prev,
       liveMatch: {
         ...m,
@@ -1776,59 +1241,182 @@ export default function App() {
         freeHitActive: last.isFreeHit,
         isCompleted: false,
         isTied: false,
-        batters: updatedBatters,
-        bowlers: updatedBowlers,
-        history: rest,
-      },
+        resultText: '',
+        batters,
+        bowlers,
+        history: rest
+      }
     }));
-    setUmpireBanner("Last delivery undone.");
+    setUmpireBanner('Last delivery undone.');
+  };
+
+  const handleRetiredHurt = () => {
+    const m = club.liveMatch;
+    if (!m || m.isCompleted) return;
+    const nextBatter = m.battingPlayers.find(
+      (n) => n !== m.striker && n !== m.nonStriker && !m.batters[n]?.out && !m.batters[n]?.retiredHurt
+    );
+    if (!nextBatter) {
+      notify('No replacement batter available.', 'rose');
+      return;
+    }
+    const batters = { ...m.batters };
+    if (batters[m.striker]) batters[m.striker] = { ...batters[m.striker], retiredHurt: true };
+    updateClub((prev) => ({
+      ...prev,
+      liveMatch: { ...m, striker: nextBatter, batters }
+    }));
+    setUmpireBanner(`${m.striker} Retired Hurt. ${nextBatter} walks in.`);
+  };
+
+  const startSecondInnings = () => {
+    const m = club.liveMatch;
+    if (!m || m.innings !== 1) return;
+
+    const batters = {};
+    m.bowlingPlayers.forEach((n) => {
+      batters[n] = { name: n, runs: 0, balls: 0, fours: 0, sixes: 0, out: false, retiredHurt: false, dismissal: '' };
+    });
+    const bowlers = {};
+    m.battingPlayers.forEach((n) => {
+      bowlers[n] = { name: n, balls: 0, runs: 0, wickets: 0 };
+    });
+
+    updateClub((prev) => ({
+      ...prev,
+      liveMatch: {
+        ...m,
+        innings: 2,
+        battingTeam: m.bowlingTeam,
+        bowlingTeam: m.battingTeam,
+        battingPlayers: m.bowlingPlayers,
+        bowlingPlayers: m.battingPlayers,
+        firstInningsScore: m.runs,
+        firstInningsWickets: m.wickets,
+        firstInningsBatters: m.batters,
+        firstInningsBowlers: m.bowlers,
+        target: m.runs + 1,
+        runs: 0,
+        wickets: 0,
+        balls: 0,
+        striker: m.bowlingPlayers[0] || 'Batter 1',
+        nonStriker: m.bowlingPlayers[1] || 'Batter 2',
+        bowler: m.battingPlayers[0] || 'Bowler 1',
+        freeHitActive: false,
+        isCompleted: false,
+        isTied: false,
+        resultText: '',
+        batters,
+        bowlers
+      }
+    }));
+    setUmpireBanner(`2nd Innings! Target is ${m.runs + 1}`);
+    speakText(`Second innings! Target is ${m.runs + 1} runs!`);
+  };
+
+  const startSuperOver = () => {
+    const m = club.liveMatch;
+    if (!m) return;
+    const batters = {};
+    m.teamAPlayers.forEach((n) => {
+      batters[n] = { name: n, runs: 0, balls: 0, fours: 0, sixes: 0, out: false, retiredHurt: false, dismissal: '' };
+    });
+    const bowlers = {};
+    m.teamBPlayers.forEach((n) => {
+      bowlers[n] = { name: n, balls: 0, runs: 0, wickets: 0 };
+    });
+
+    updateClub((prev) => ({
+      ...prev,
+      liveMatch: {
+        ...m,
+        title: `${m.title} — SUPER OVER`,
+        totalOvers: 1,
+        innings: 1,
+        isSuperOver: true,
+        battingTeam: m.teamAName,
+        bowlingTeam: m.teamBName,
+        battingPlayers: m.teamAPlayers,
+        bowlingPlayers: m.teamBPlayers,
+        firstInningsScore: null,
+        firstInningsWickets: null,
+        firstInningsBatters: {},
+        firstInningsBowlers: {},
+        runs: 0,
+        wickets: 0,
+        balls: 0,
+        target: null,
+        striker: m.teamAPlayers[0] || 'Batter 1',
+        nonStriker: m.teamAPlayers[1] || 'Batter 2',
+        bowler: m.teamBPlayers[0] || 'Bowler 1',
+        freeHitActive: false,
+        isCompleted: false,
+        isTied: false,
+        resultText: '',
+        batters,
+        bowlers,
+        history: []
+      }
+    }));
+    setMilestoneBanner('SUPER OVER LIVE! 6 Balls Tie-Breaker!');
   };
 
   const archiveLiveMatch = () => {
-    const m = state.liveMatch;
+    const m = club.liveMatch;
     if (!m) return;
     const mvp = computeLiveMvp(m);
     const scorecardText = buildWhatsappScorecard(m);
     const firstInnSummary =
       m.firstInningsScore !== null
-        ? " vs " + m.bowlingTeam + " " + m.firstInningsScore + "/" + (m.firstInningsWickets ?? 0)
-        : "";
-    const completed: CompletedMatch = {
-      id: uid("hist"),
+        ? ` vs ${m.bowlingTeam} ${m.firstInningsScore}/${m.firstInningsWickets}`
+        : '';
+
+    const completed = {
+      id: uid('hist'),
       title: m.title,
       date: new Date().toISOString().slice(0, 10),
-      summary:
-        m.battingTeam +
-        " " +
-        m.runs +
-        "/" +
-        m.wickets +
-        " (" +
-        formatOvers(m.balls) +
-        " ov)" +
-        firstInnSummary,
-      winner: m.resultText || "Completed",
+      summary: `${m.battingTeam} ${m.runs}/${m.wickets} (${formatOvers(m.balls)} ov)${firstInnSummary}`,
+      winner: m.resultText || 'Completed',
       mvp,
-      scorecardText,
+      scorecardText
     };
 
-    setState((prev) => {
+    // Determine W / L / T outcome for Team A (primary club metric)
+    let outcome = 'W';
+    if (m.isTied || (m.resultText && m.resultText.toLowerCase().includes('tied'))) {
+      outcome = 'T';
+    } else if (m.resultText && !m.resultText.startsWith(m.teamAName)) {
+      outcome = 'L';
+    }
+
+    updateClub((prev) => {
       const updatedPlayers = prev.players.map((pl) => {
-        const bat = m.batters[pl.name];
-        const bowl = m.bowlers[pl.name];
-        const participated =
-          m.teamAPlayers.includes(pl.name) || m.teamBPlayers.includes(pl.name);
+        const participated = m.teamAPlayers.includes(pl.name) || m.teamBPlayers.includes(pl.name);
         if (!participated) return pl;
+
+        const bat1 = m.firstInningsBatters?.[pl.name];
+        const bat2 = m.batters?.[pl.name];
+        const bowl1 = m.firstInningsBowlers?.[pl.name];
+        const bowl2 = m.bowlers?.[pl.name];
+
+        const addRuns = (bat1?.runs || 0) + (bat2?.runs || 0);
+        const addBalls = (bat1?.balls || 0) + (bat2?.balls || 0);
+        const addFours = (bat1?.fours || 0) + (bat2?.fours || 0);
+        const addSixes = (bat1?.sixes || 0) + (bat2?.sixes || 0);
+        const addWkts = (bowl1?.wickets || 0) + (bowl2?.wickets || 0);
+        const addBowlBalls = (bowl1?.balls || 0) + (bowl2?.balls || 0);
+        const addConceded = (bowl1?.runs || 0) + (bowl2?.runs || 0);
+
         return {
           ...pl,
           matches: pl.matches + 1,
-          runs: pl.runs + (bat ? bat.runs : 0),
-          ballsFaced: pl.ballsFaced + (bat ? bat.balls : 0),
-          fours: pl.fours + (bat ? bat.fours : 0),
-          sixes: pl.sixes + (bat ? bat.sixes : 0),
-          wickets: pl.wickets + (bowl ? bowl.wickets : 0),
-          oversBowled: pl.oversBowled + (bowl ? Math.ceil(bowl.balls / 6) : 0),
-          runsConceded: pl.runsConceded + (bowl ? bowl.runs : 0),
+          runs: pl.runs + addRuns,
+          ballsFaced: pl.ballsFaced + addBalls,
+          fours: pl.fours + addFours,
+          sixes: pl.sixes + addSixes,
+          wickets: pl.wickets + addWkts,
+          oversBowled: Number((pl.oversBowled + addBowlBalls / 6).toFixed(1)),
+          runsConceded: pl.runsConceded + addConceded
         };
       });
 
@@ -1838,45 +1426,38 @@ export default function App() {
         liveMatch: null,
         scheduledMatch: null,
         matchHistory: [completed, ...prev.matchHistory],
+        recentResults: [outcome, ...(prev.recentResults || [])].slice(0, 20)
       };
     });
-    setUmpireBanner("Match archived to Match History and stats updated!");
+
+    setMatchSubTab('history');
+    setUmpireBanner('');
+    notify('Match archived and player career stats updated!', 'emerald');
   };
 
+  // ============================================================================
+  // 8. LEGENDBOT AI + VOICE ENGINE (WORKS FOR ACTIVE WORKSPACE)
+  // ============================================================================
   const toggleVoiceInput = () => {
     if (isListening && recognitionRef.current) {
       recognitionRef.current.stop();
       setIsListening(false);
       return;
     }
-    const win = window as unknown as {
-      SpeechRecognition?: new () => SpeechRecognitionLike;
-      webkitSpeechRecognition?: new () => SpeechRecognitionLike;
-    };
-    const Rec = win.SpeechRecognition || win.webkitSpeechRecognition;
+    const Rec = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!Rec) {
-      setAiMessages((prev) => [
-        ...prev,
-        {
-          id: uid("bot"),
-          role: "bot",
-          layer: "Voice Input",
-          text: "Voice recognition is not supported on this browser. Please type your cricket question below.",
-          timestamp: nowTime(),
-        },
-      ]);
+      notify('Voice input is not supported in this browser.', 'rose');
       return;
     }
     try {
       const rec = new Rec();
-      rec.lang = "en-IN";
+      rec.lang = 'en-IN';
       rec.interimResults = false;
-      rec.maxAlternatives = 1;
       rec.onresult = (ev) => {
-        const spoken = ev.results[0]?.[0]?.transcript || "";
+        const spoken = ev.results?.[0]?.[0]?.transcript || '';
         if (spoken) {
           setAiInput(spoken);
-          void askLegendBot(spoken);
+          askLegendBot(spoken);
         }
       };
       rec.onerror = () => setIsListening(false);
@@ -1889,315 +1470,251 @@ export default function App() {
     }
   };
 
-  const askLegendBot = async (rawPrompt: string) => {
+  const askLegendBot = (rawPrompt) => {
     const prompt = rawPrompt.trim();
-    if (!prompt || aiLoading) return;
-
-    setAiMessages((prev) => [
-      ...prev,
-      { id: uid("u"), role: "user", text: prompt, timestamp: nowTime() },
-    ]);
-    setAiInput("");
-
+    if (!prompt) return;
+    setAiMessages((prev) => [...prev, { id: uid('u'), role: 'user', text: prompt, time: nowTime() }]);
+    setAiInput('');
     const q = prompt.toLowerCase();
 
-    if (q.includes("orange") || q.includes("purple") || q.includes("cap") || q.includes("top")) {
-      const ocSr = ((orangeCapHolder.runs / Math.max(1, orangeCapHolder.ballsFaced)) * 100).toFixed(1);
-      const reply =
-        "Orange Cap: " +
-        orangeCapHolder.name +
-        " (" +
-        orangeCapHolder.runs +
-        " runs, SR " +
-        ocSr +
-        "). Purple Cap: " +
-        purpleCapHolder.name +
-        " (" +
-        purpleCapHolder.wickets +
-        " wickets).";
-      setAiMessages((prev) => [
-        ...prev,
-        { id: uid("b"), role: "bot", layer: "Club Caps and Stats", text: reply, timestamp: nowTime() },
-      ]);
-      speak(reply);
-      return;
-    }
+    let reply = '';
+    const matchedPlayer = club.players.find((p) =>
+      q.includes(p.name.split(' ')[0].toLowerCase()) || q.includes(p.name.toLowerCase())
+    );
 
-    if (q.includes("due") || q.includes("balance") || q.includes("money") || q.includes("treasury")) {
-      const dueList = state.players
-        .filter((p) => p.finesDue > 0)
-        .map((p) => p.name + " (Rs." + p.finesDue + ")")
-        .join(", ");
-      const reply =
-        "Club Net Balance is Rs." +
-        clubNetBalance +
-        " (Advance Credits: Rs." +
-        totalAdvances +
-        ", Expenses: Rs." +
-        totalExpenses +
-        "). Pending dues: " +
-        (dueList || "All clear!") +
-        ".";
-      setAiMessages((prev) => [
-        ...prev,
-        { id: uid("b"), role: "bot", layer: "Club Treasury", text: reply, timestamp: nowTime() },
-      ]);
-      speak(reply);
-      return;
-    }
-
-    if (q.includes("poll") || q.includes("playing")) {
-      const inVotes = state.poll.filter((v) => v.choice === "IN");
-      const inNames = inVotes.map((v) => v.playerName).join(", ");
-      const reply = "Playing Poll: " + inVotes.length + " players are IN (" + (inNames || "None yet") + ").";
-      setAiMessages((prev) => [
-        ...prev,
-        { id: uid("b"), role: "bot", layer: "Club Poll", text: reply, timestamp: nowTime() },
-      ]);
-      speak(reply);
-      return;
-    }
-
-    if (
-      (q.includes("live") || q.includes("our match") || q.includes("indore legends")) &&
-      (q.includes("score") || q.includes("match"))
-    ) {
-      const activeMatch = state.liveMatch;
-      const reply = activeMatch
-        ? "Indore Legends Live Match: " +
-          activeMatch.battingTeam +
-          " " +
-          activeMatch.runs +
-          "/" +
-          activeMatch.wickets +
-          " (" +
-          formatOvers(activeMatch.balls) +
-          "/" +
-          activeMatch.totalOvers +
-          " ov). Striker: " +
-          activeMatch.striker +
-          ", Bowler: " +
-          activeMatch.bowler +
-          ". Auto MVP: " +
-          computeLiveMvp(activeMatch) +
-          "."
-        : state.scheduledMatch
-        ? "No match live right now. Next scheduled match: " +
-          state.scheduledMatch.title +
-          " (" +
-          state.scheduledMatch.overs +
-          " overs) on " +
-          state.scheduledMatch.dateTime.replace("T", " ") +
-          "."
-        : "No match is currently active. Admins can create a match in the Match tab!";
-      setAiMessages((prev) => [
-        ...prev,
-        { id: uid("b"), role: "bot", layer: "Club Match Engine", text: reply, timestamp: nowTime() },
-      ]);
-      speak(reply);
-      return;
-    }
-
-    setAiLoading(true);
-    try {
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          prompt:
-            "Focus strictly on Cricket (IPL, Cricbuzz-style match info, International, Domestic, and Indore Legends club data). Question: " +
-            prompt,
-          context: {
-            loggedInPlayer: currentUser?.name,
-            orangeCap: orangeCapHolder.name + " (" + orangeCapHolder.runs + ")",
-            purpleCap: purpleCapHolder.name + " (" + purpleCapHolder.wickets + ")",
-            clubBalance: clubNetBalance,
-            liveMatch: state.liveMatch
-              ? state.liveMatch.battingTeam + " " + state.liveMatch.runs + "/" + state.liveMatch.wickets
-              : "No active match",
-          },
-        }),
-      });
-      const data = (await res.json()) as { reply?: string };
-      if (res.ok && data.reply) {
-        setAiMessages((prev) => [
-          ...prev,
-          { id: uid("b"), role: "bot", layer: "LegendBot Cricket AI", text: data.reply || "", timestamp: nowTime() },
-        ]);
-        speak(data.reply);
+    if (q.includes('score') || q.includes('live') || q.includes('match')) {
+      if (club.liveMatch) {
+        const lm = club.liveMatch;
+        reply = `[${club.shortName}] Live Match: ${lm.battingTeam} ${lm.runs}/${lm.wickets} (${formatOvers(lm.balls)}/${lm.totalOvers} ov). Striker: ${lm.striker}, Bowler: ${lm.bowler}. Auto MVP: ${computeLiveMvp(lm)}.`;
+      } else if (club.scheduledMatch) {
+        const s = club.scheduledMatch;
+        reply = `[${club.shortName}] Upcoming Match: ${s.title} (${s.teamAName} vs ${s.teamBName}, ${s.overs} overs) on ${s.dateTime.replace('T', ' ')}.`;
       } else {
-        throw new Error("API fallback");
+        reply = `[${club.shortName}] No match is scheduled or live right now. Total matches played: ${club.matchHistory.length}. Tap "Create Match" to start one!`;
       }
-    } catch {
-      const isExternalCricket =
-        q.includes("ipl") ||
-        q.includes("cricbuzz") ||
-        q.includes("india") ||
-        q.includes("rcb") ||
-        q.includes("csk") ||
-        q.includes("mi") ||
-        q.includes("ranji") ||
-        q.includes("domestic") ||
-        q.includes("intl") ||
-        q.includes("international");
-      const fallback = isExternalCricket
-        ? "For live IPL, International, and Domestic scores like Cricbuzz, add GROQ_API_KEY in Vercel env settings. Meanwhile, Indore Legends stats are live right here: Orange Cap is " +
-          orangeCapHolder.name +
-          " (" +
-          orangeCapHolder.runs +
-          " runs) and Purple Cap is " +
-          purpleCapHolder.name +
-          " (" +
-          purpleCapHolder.wickets +
-          " wickets)!"
-        : "LegendBot Club Intel: Club Balance Rs." +
-          clubNetBalance +
-          ", Orange Cap " +
-          orangeCapHolder.name +
-          " (" +
-          orangeCapHolder.runs +
-          "), Purple Cap " +
-          purpleCapHolder.name +
-          " (" +
-          purpleCapHolder.wickets +
-          "). Ask about live score, caps, dues, poll, or IPL/Cricbuzz cricket!";
-      setAiMessages((prev) => [
-        ...prev,
-        { id: uid("b"), role: "bot", layer: "LegendBot Cricket Fallback", text: fallback, timestamp: nowTime() },
-      ]);
-      speak(fallback);
-    } finally {
-      setAiLoading(false);
+    } else if (q.includes('cap') || q.includes('orange') || q.includes('purple') || q.includes('top')) {
+      const oc = orangeCap ? `${orangeCap.name} (${orangeCap.runs} runs)` : 'Unclaimed (0 runs so far)';
+      const pc = purpleCap ? `${purpleCap.name} (${purpleCap.wickets} wickets)` : 'Unclaimed (0 wickets so far)';
+      reply = `[${club.shortName}] Orange Cap: ${oc}. Purple Cap: ${pc}.`;
+    } else if (q.includes('fund') || q.includes('balance') || q.includes('money') || q.includes('due') || q.includes('treasury')) {
+      const dues = club.players.filter((p) => p.finesDue > 0).map((p) => `${p.name} (Rs. ${p.finesDue})`).join(', ');
+      reply = `[${club.shortName}] Club Fund Balance: Rs. ${financeSummary.net} (Credits: Rs. ${financeSummary.credits}, Advances: Rs. ${financeSummary.advances}, Fines: Rs. ${financeSummary.fines}, Expenses: Rs. ${financeSummary.expenses}). Pending Dues: ${dues || 'None (Rs. 0)'}.`;
+    } else if (q.includes('poll') || q.includes('attendance') || q.includes('playing')) {
+      const ins = club.poll.filter((v) => v.choice === 'IN').map((v) => v.playerName.split(' ')[0]);
+      reply = `[${club.shortName}] Attendance Poll: ${ins.length} players IN (${ins.join(', ') || 'No votes yet'}).`;
+    } else if (matchedPlayer) {
+      const sr = matchedPlayer.ballsFaced > 0 ? ((matchedPlayer.runs / matchedPlayer.ballsFaced) * 100).toFixed(1) : '0.0';
+      const econ = matchedPlayer.oversBowled > 0 ? (matchedPlayer.runsConceded / matchedPlayer.oversBowled).toFixed(2) : '0.00';
+      reply = `${matchedPlayer.name} (${matchedPlayer.role}) in ${club.shortName}: ${matchedPlayer.matches} matches, ${matchedPlayer.runs} runs (SR ${sr}), ${matchedPlayer.wickets} wickets (Econ ${econ}), Dues: Rs. ${matchedPlayer.finesDue}.`;
+    } else {
+      reply = `[${club.shortName} Summary] Squad: ${club.players.length} players | Matches Played: ${club.matchHistory.length} | Club Fund: Rs. ${financeSummary.net} | Attendance IN: ${club.poll.filter((v) => v.choice === 'IN').length}. Ask me about live score, caps, fund, poll, or any player name!`;
     }
+
+    setAiMessages((prev) => [...prev, { id: uid('b'), role: 'bot', text: reply, time: nowTime() }]);
+    speakText(reply);
   };
 
-  if (!session || !currentUser) {
+  // ============================================================================
+  // 9. NORMAL LOGIN SCREEN (NO GOOGLE LOGIN, NO DEMO BYPASS, NO PASSWORD HINTS)
+  // ============================================================================
+  if (!session || !currentUser || !authBase) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          padding: 18,
-          background:
-            "radial-gradient(circle at top, rgba(245,158,11,0.18), rgba(15,23,42,0.96) 55%, #040714 100%)",
-        }}
-      >
-        <style>{APP_STYLES}</style>
-        <div className="il-card il-ipl-card" style={{ width: "100%", maxWidth: 420 }}>
-          <div style={{ textAlign: "center", marginBottom: 20 }}>
-            <div
-              className="il-crest"
-              style={{ width: 64, height: 64, fontSize: 24, margin: "0 auto 12px auto" }}
-            >
-              IL
-            </div>
-            <div
-              className="il-pill"
-              style={{ background: "rgba(251,191,36,0.18)", color: "#fcd34d", marginBottom: 8 }}
-            >
-              <Flame size={13} /> IPL Broadcast Edition
-            </div>
-            <h1 style={{ margin: 0, fontSize: 26, fontWeight: 900, letterSpacing: "0.03em" }}>
-              INDORE LEGENDS
-            </h1>
-            <p style={{ margin: "6px 0 0 0", fontSize: 13, color: "var(--muted)" }}>
-              Squad Member and Admin Portal
-            </p>
-          </div>
-
-          <form onSubmit={handleLogin} style={{ display: "grid", gap: 12 }}>
-            <div>
-              <label style={{ fontSize: 12, color: "var(--muted)", fontWeight: 700, display: "block", marginBottom: 6 }}>
-                SELECT YOUR NAME
-              </label>
-              <select
-                className="il-select"
-                value={loginPlayerId}
-                onChange={(e) => {
-                  setLoginPlayerId(e.target.value);
-                  setLoginError("");
-                }}
-              >
-                {state.players.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.isAdmin ? "(Admin)" : ""}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label style={{ fontSize: 12, color: "var(--muted)", fontWeight: 700, display: "block", marginBottom: 6 }}>
-                PASSWORD
-              </label>
-              <input
-                type="password"
-                className="il-input"
-                placeholder="Enter your password"
-                value={loginPassword}
-                onChange={(e) => {
-                  setLoginPassword(e.target.value);
-                  setLoginError("");
-                }}
-              />
-            </div>
-
-            {loginError && (
-              <div
-                style={{
-                  background: "rgba(225,29,72,0.18)",
-                  border: "1px solid rgba(251,113,133,0.45)",
-                  color: "#fda4af",
-                  padding: "8px 10px",
-                  borderRadius: 10,
-                  fontSize: 12,
-                  fontWeight: 600,
-                }}
-              >
-                {loginError}
-              </div>
-            )}
-
-            <button type="submit" className="il-btn il-btn-gold" style={{ padding: 13, fontSize: 15 }}>
-              <Lock size={16} /> Enter Indore Legends Hub
-            </button>
-          </form>
-
-          <div style={{ marginTop: 14, fontSize: 11, color: "var(--muted)", textAlign: "center" }}>
-            Admins can log in with either Normal Pass or locked Admin Pass.
-          </div>
+      <div className="min-h-[100dvh] w-full bg-[#04091a] text-white flex flex-col lg:flex-row relative overflow-x-hidden">
+        <div className="pointer-events-none fixed inset-0 overflow-hidden">
+          <div className="absolute -top-32 left-1/4 w-[500px] h-[500px] bg-blue-600/20 rounded-full blur-[130px]" />
+          <div className="absolute top-1/3 right-0 w-[460px] h-[460px] bg-amber-500/15 rounded-full blur-[140px]" />
+          <div className="absolute bottom-0 left-0 w-[380px] h-[380px] bg-cyan-500/10 rounded-full blur-[120px]" />
         </div>
+
+        {/* Left Column: Glassmorphic Squad Sign-In */}
+        <section className="relative z-10 flex-1 flex items-center justify-center p-5 sm:p-10">
+          <div className="w-full max-w-md rounded-3xl border border-white/15 bg-[#091536]/75 backdrop-blur-2xl p-6 sm:p-8 shadow-2xl space-y-6">
+            <div className="flex items-center gap-3.5">
+              <LionCrestSVG size={62} />
+              <div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/35 text-amber-300 text-[10px] font-extrabold uppercase tracking-widest">
+                  <Crown className="w-3 h-3" /> Official Squad Portal
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-black italic tracking-tight bg-gradient-to-r from-white via-amber-200 to-amber-500 bg-clip-text text-transparent">
+                  INDORE LEGENDS
+                </h1>
+                <p className="text-[11px] font-bold tracking-[0.22em] text-cyan-300/90">PLAY • MANAGE • WIN</p>
+              </div>
+            </div>
+
+            <div>
+              <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-white">Squad Sign In</h2>
+              <p className="text-xs sm:text-sm text-slate-400 mt-1">
+                Select your name and enter your password to access the club dashboard.
+              </p>
+            </div>
+
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Squad Member
+                </label>
+                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-md focus-within:border-amber-400/70 transition-colors relative">
+                  <select
+                    value={loginPlayerId}
+                    onChange={(e) => {
+                      setLoginPlayerId(e.target.value);
+                      setLoginError('');
+                    }}
+                    className="w-full bg-transparent text-sm text-white p-3.5 pr-10 rounded-2xl focus:outline-none appearance-none cursor-pointer font-medium"
+                  >
+                    {SQUAD_ROSTER.map((p) => (
+                      <option key={p.id} value={p.id} className="bg-[#081330] text-white">
+                        {p.name} ({p.role})
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Password
+                </label>
+                <div className="rounded-2xl border border-white/15 bg-white/5 backdrop-blur-md focus-within:border-amber-400/70 transition-colors relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={loginPassword}
+                    onChange={(e) => {
+                      setLoginPassword(e.target.value);
+                      setLoginError('');
+                    }}
+                    placeholder="Enter your password"
+                    autoComplete="current-password"
+                    className="w-full bg-transparent text-sm text-white p-3.5 pr-12 rounded-2xl placeholder:text-slate-500 focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((v) => !v)}
+                    className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white cursor-pointer"
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {loginError && (
+                <div className="p-3 rounded-xl bg-rose-500/15 border border-rose-500/35 text-rose-300 text-xs font-semibold flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  <span>{loginError}</span>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                className="w-full py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:brightness-110 text-slate-950 font-black text-sm tracking-wide shadow-[0_0_24px_rgba(251,191,36,0.35)] transition-all active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ShieldCheck className="w-4 h-4" /> Sign In
+              </button>
+            </form>
+          </div>
+        </section>
+
+        {/* Right Column: Stadium Broadcast Emblem Showcase */}
+        <section className="relative z-10 hidden lg:flex flex-1 p-5">
+          <div className="relative w-full h-full rounded-[28px] overflow-hidden border border-amber-400/25 bg-gradient-to-br from-[#0a1d4f] via-[#06102d] to-[#030712] flex flex-col justify-between p-8 shadow-2xl">
+            <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-45" viewBox="0 0 600 700" preserveAspectRatio="none">
+              <defs>
+                <linearGradient id="beamLeft" x1="0" y1="0" x2="0.4" y2="1">
+                  <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.5" />
+                  <stop offset="100%" stopColor="#38bdf8" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="beamRight" x1="1" y1="0" x2="0.5" y2="1">
+                  <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.45" />
+                  <stop offset="100%" stopColor="#fbbf24" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <polygon points="0,0 180,0 380,700 80,700" fill="url(#beamLeft)" />
+              <polygon points="600,0 430,0 240,700 540,700" fill="url(#beamRight)" />
+              <ellipse cx="300" cy="640" rx="340" ry="110" fill="none" stroke="#38bdf8" strokeOpacity="0.22" strokeWidth="2" />
+              <ellipse cx="300" cy="665" rx="360" ry="125" fill="none" stroke="#fbbf24" strokeOpacity="0.22" strokeWidth="2" />
+            </svg>
+
+            <div className="relative z-10 flex items-center justify-between">
+              <span className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-xs font-bold text-amber-300">
+                <Trophy className="w-3.5 h-3.5" /> Indore Legends Cricket Club
+              </span>
+              <span className="italic font-semibold text-amber-200/90 text-base">Together We Rise</span>
+            </div>
+
+            <div className="relative z-10 text-center my-auto space-y-4">
+              <div className="flex justify-center">
+                <LionCrestSVG size={126} />
+              </div>
+              <h3 className="text-4xl font-black italic tracking-tight bg-gradient-to-b from-white via-amber-100 to-amber-400 bg-clip-text text-transparent">
+                INDORE LEGENDS
+              </h3>
+              <p className="text-xs font-bold tracking-[0.28em] text-cyan-300 uppercase">PLAY • MANAGE • WIN</p>
+              <p className="text-sm text-slate-300 max-w-md mx-auto">
+                Complete cricket club management — Live IPL-style ball-by-ball scoring, balanced team splitting, club treasury, squad rankings, and LegendBot voice assistant.
+              </p>
+            </div>
+
+            <div className="relative z-10 grid grid-cols-3 gap-3 text-center">
+              {[
+                { label: 'Squad Members', val: '13' },
+                { label: 'Live Scorer', val: 'IPL HUD' },
+                { label: 'Club Sync', val: 'Ready' }
+              ].map((s) => (
+                <div key={s.label} className="rounded-2xl bg-[#071333]/80 backdrop-blur-xl border border-white/10 p-3">
+                  <div className="text-lg font-black text-amber-300">{s.val}</div>
+                  <div className="text-[11px] text-slate-400">{s.label}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
 
-  const userSR =
-    currentUser.ballsFaced > 0
-      ? ((currentUser.runs / currentUser.ballsFaced) * 100).toFixed(1)
-      : "0.0";
-  const userEcon =
-    currentUser.oversBowled > 0
-      ? (currentUser.runsConceded / currentUser.oversBowled).toFixed(2)
-      : "0.00";
-  const myPollVote = state.poll.find((v) => v.playerId === currentUser.id)?.choice || "";
+  // ============================================================================
+  // 10. NAVIGATION CONFIG & COMPUTED LIVE DATA
+  // ============================================================================
+  const navItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'squad', label: 'Squad', icon: Users },
+    { id: 'matches', label: 'Matches', icon: Trophy },
+    { id: 'attendance', label: 'Attendance', icon: ClipboardCheck },
+    { id: 'finance', label: 'Finance', icon: Wallet },
+    { id: 'leaderboard', label: 'Leaderboard', icon: BarChart3 },
+    { id: 'chat', label: 'Chat', icon: MessageSquare },
+    { id: 'ai', label: 'LegendBot', icon: Bot },
+    { id: 'settings', label: 'Settings', icon: Settings }
+  ];
 
-  const lm = state.liveMatch;
+  const mobileNav = [
+    { id: 'dashboard', label: 'Home', icon: Home },
+    { id: 'squad', label: 'Squad', icon: Users },
+    { id: 'matches', label: 'Matches', icon: Trophy },
+    { id: 'leaderboard', label: 'Ranks', icon: BarChart3 }
+  ];
+
+  const filteredSquad = club.players.filter((p) => {
+    if (!squadSearch.trim()) return true;
+    const q = squadSearch.toLowerCase();
+    return p.name.toLowerCase().includes(q) || p.role.toLowerCase().includes(q) || p.jersey.includes(q);
+  });
+
+  const lm = club.liveMatch;
   const lmMaxBalls = lm ? lm.totalOvers * 6 : 60;
   const lmBallsLeft = lm ? Math.max(0, lmMaxBalls - lm.balls) : 0;
-  const lmCrr = lm && lm.balls > 0 ? (lm.runs / (lm.balls / 6)).toFixed(2) : "0.00";
+  const lmCrr = lm && lm.balls > 0 ? (lm.runs / (lm.balls / 6)).toFixed(2) : '0.00';
   const lmRunsNeeded = lm && lm.target !== null ? Math.max(0, lm.target - lm.runs) : null;
-  const lmRrr =
-    lmRunsNeeded !== null && lmBallsLeft > 0
-      ? (lmRunsNeeded / (lmBallsLeft / 6)).toFixed(2)
-      : "0.00";
+  const lmRrr = lmRunsNeeded !== null && lmBallsLeft > 0 ? (lmRunsNeeded / (lmBallsLeft / 6)).toFixed(2) : '0.00';
 
-  const oversGrouped: { overNum: number; balls: BallEvent[]; runs: number; wickets: number }[] = [];
+  const oversGrouped = [];
   if (lm) {
-    const currentInnBalls = [...lm.history].filter((b) => b.innings === lm.innings).reverse();
-    const map = new Map<number, BallEvent[]>();
-    currentInnBalls.forEach((b) => {
+    const innBalls = [...lm.history].filter((b) => b.innings === lm.innings).reverse();
+    const map = new Map();
+    innBalls.forEach((b) => {
       const list = map.get(b.over) || [];
       list.push(b);
       map.set(b.over, list);
@@ -2209,2171 +1726,560 @@ export default function App() {
           overNum: overNum + 1,
           balls,
           runs: balls.reduce((s, b) => s + b.runs, 0),
-          wickets: balls.filter((b) => b.isWicket).length,
+          wickets: balls.filter((b) => b.isWicket).length
         });
       });
   }
 
-  const renderBallStyle = (b: BallEvent): React.CSSProperties => {
-    if (b.isWicket) return { background: "#e11d48", color: "#fff", borderColor: "#fb7185" };
-    if (b.isWide || b.isNoBall)
-      return { background: "rgba(245,158,11,0.25)", color: "#fde68a", borderColor: "#fbbf24" };
-    if (b.runs === 6)
-      return { background: "linear-gradient(135deg,#f59e0b,#ea580c)", color: "#fff", borderColor: "#fcd34d" };
-    if (b.runs === 4) return { background: "#0284c7", color: "#fff", borderColor: "#38bdf8" };
-    return { background: "#1e293b", color: "#cbd5e1", borderColor: "#334155" };
-  };
+  const myPollChoice = club.poll.find((v) => v.playerId === currentUser.id)?.choice || '';
+  const totalVotes = club.poll.length;
+  const inCount = club.poll.filter((v) => v.choice === 'IN').length;
+  const maybeCount = club.poll.filter((v) => v.choice === 'MAYBE').length;
+  const outCount = club.poll.filter((v) => v.choice === 'OUT').length;
 
-  const renderBallText = (b: BallEvent): string => {
-    if (b.isWicket) return "W";
-    if (b.isWide) return "WD";
-    if (b.isNoBall) return "NB";
-    return String(b.runs);
-  };
+  // Pad last 5 matches with '-' when fewer than 5 matches have been played
+  const lastFiveSlots = [0, 1, 2, 3, 4].map((idx) => club.recentResults[idx] || '-');
 
-  const gmCollected = state.gm.treasury
-    .filter((t) => t.type !== "EXPENSE")
-    .reduce((s, t) => s + t.amount, 0);
-  const gmSpent = state.gm.treasury
-    .filter((t) => t.type === "EXPENSE")
-    .reduce((s, t) => s + t.amount, 0);
-
-  const navItems: { id: TabKey; label: string; icon: React.ReactNode }[] = [
-    { id: "home", label: "Home", icon: <Home size={18} /> },
-    { id: "match", label: "Match", icon: <Trophy size={18} /> },
-    { id: "squad", label: "Squad", icon: <Users size={18} /> },
-    { id: "treasury", label: "Money", icon: <Wallet size={18} /> },
-    { id: "chat", label: "Chat", icon: <MessageSquare size={18} /> },
-    { id: "ai", label: "Bot", icon: <Bot size={18} /> },
-  ];
-  if (gmUnlocked) {
-    navItems.push({ id: "gm", label: "Mandir", icon: <Flame size={18} /> });
-  }
-
+  // ============================================================================
+  // 11. AUTHENTICATED APPLICATION SHELL
+  // ============================================================================
   return (
-    <div className="il-shell">
-      <style>{APP_STYLES}</style>
+    <div className="min-h-[100dvh] w-full bg-[#04091b] text-slate-100 flex relative overflow-x-hidden">
+      <style>{`
+        @keyframes freeHitGlow {
+          0%, 100% { background: rgba(245, 158, 11, 0.96); color: #090d1e; box-shadow: 0 0 26px rgba(251, 191, 36, 0.85); }
+          50% { background: rgba(225, 29, 72, 0.96); color: #ffffff; box-shadow: 0 0 26px rgba(244, 63, 94, 0.85); }
+        }
+        @keyframes coinFlipAnim {
+          0% { transform: rotateY(0deg) scale(1); }
+          50% { transform: rotateY(360deg) scale(1.15); }
+          100% { transform: rotateY(720deg) scale(1); }
+        }
+        .free-hit-flash { animation: freeHitGlow 0.75s infinite; }
+        .coin-flip-3d { animation: coinFlipAnim 0.7s ease-in-out; }
+      `}</style>
 
-      {/* Pinned Gold Announcement Bar */}
-      <div className="il-gold-bar">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Bell size={16} />
-          <span>{state.announcement}</span>
-        </div>
-        {isAdmin && (
-          <button
-            type="button"
-            className="il-btn"
-            style={{ padding: "5px 9px", fontSize: 11, background: "#090d1e", color: "#fbbf24" }}
-            onClick={() =>
-              requireAdminPin("Edit Pinned Gold Announcement", () => {
-                setAnnouncementDraft(state.announcement);
-                setEditingAnnouncement(true);
-              })
-            }
-          >
-            Edit
-          </button>
-        )}
+      {/* Atmospheric Stadium Backdrop */}
+      <div className={`fixed inset-0 bg-gradient-to-br ${theme.heroGradient} pointer-events-none z-0`} />
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-24 left-1/3 w-[520px] h-[340px] bg-blue-500/18 rounded-full blur-[130px]" />
+        <div className="absolute top-1/4 -right-24 w-[420px] h-[420px] bg-amber-500/14 rounded-full blur-[140px]" />
+        <div className="absolute bottom-0 left-1/4 w-[400px] h-[280px] bg-cyan-500/10 rounded-full blur-[130px]" />
       </div>
 
-      {editingAnnouncement && (
-        <div className="il-card" style={{ display: "flex", gap: 8 }}>
-          <input
-            className="il-input"
-            value={announcementDraft}
-            onChange={(e) => setAnnouncementDraft(e.target.value)}
-            placeholder="Write pinned announcement..."
-          />
-          <button
-            type="button"
-            className="il-btn il-btn-gold"
-            onClick={() => {
-              setState((prev) => ({
-                ...prev,
-                announcement: announcementDraft.trim() || prev.announcement,
-              }));
-              setEditingAnnouncement(false);
-            }}
-          >
-            Save
-          </button>
-          <button type="button" className="il-btn" onClick={() => setEditingAnnouncement(false)}>
-            <X size={15} />
-          </button>
-        </div>
-      )}
-
-      {/* Header (Triple-Tap IL Crest unlocks Ganesh Mandir) */}
-      <header className="il-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div className="il-crest" onClick={handleCrestTap} title="Indore Legends Crest">
-            IL
-          </div>
-          <div>
-            <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: "0.03em" }}>
-              INDORE LEGENDS
+      {/* ================= DESKTOP GLASS SIDEBAR ================= */}
+      <aside className="hidden lg:flex flex-col justify-between w-64 shrink-0 sticky top-0 h-[100dvh] z-30 border-r border-white/10 bg-[#060f28]/88 backdrop-blur-2xl p-4">
+        <div className="space-y-4 overflow-y-auto pr-1">
+          {/* Crest (Triple-Tap unlocks Ganesh Mandir Cricket Zone) */}
+          <div className="flex flex-col items-center text-center pt-1 pb-3 border-b border-white/10">
+            <LionCrestSVG size={66} onClick={handleCrestTap} isGM={isGMMode} />
+            <div className="mt-2 font-black italic text-base tracking-wide bg-gradient-to-r from-amber-200 via-yellow-400 to-amber-500 bg-clip-text text-transparent">
+              {isGMMode ? 'GANESH MANDIR' : 'INDORE LEGENDS'}
             </div>
-            <div style={{ fontSize: 11, color: "var(--muted)" }}>
-              {currentUser.name} {isAdmin ? "- ADMIN" : "- PLAYER"}
-            </div>
-          </div>
-        </div>
-
-        <div style={{ display: "flex", gap: 6 }}>
-          <button
-            type="button"
-            className="il-btn"
-            style={{ padding: "8px 10px" }}
-            onClick={() => setVoiceOutput((v) => !v)}
-            title="Toggle Voice Commentary"
-          >
-            {voiceOutput ? <Volume2 size={16} color="#34d399" /> : <VolumeX size={16} color="#94a3b8" />}
-          </button>
-          <button
-            type="button"
-            className="il-btn"
-            style={{ padding: "8px 10px", color: "#fb7185" }}
-            onClick={handleLogout}
-            title="Logout"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
-      </header>
-
-      {/* HOME TAB */}
-      {tab === "home" && (
-        <div>
-          <div
-            className="il-card"
-            style={{
-              background:
-                "linear-gradient(135deg, rgba(255,94,151,0.18), rgba(76,29,149,0.34), rgba(15,23,42,0.95))",
-              borderColor: "rgba(255, 138, 61, 0.45)",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-              <span className="il-pill" style={{ background: "rgba(251,191,36,0.2)", color: "#fde68a" }}>
-                <Flame size={13} /> {state.scheduledMatch ? state.scheduledMatch.title : "Official Launch Countdown"}
-              </span>
-              <span style={{ fontSize: 11, color: "#cbd5e1", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <Clock size={13} />{" "}
-                {state.scheduledMatch ? state.scheduledMatch.dateTime.replace("T", " ") : "Nov 29, 2026 - 3:00 PM IST"}
-              </span>
-            </div>
-
-            <div className="il-grid-4" style={{ marginTop: 12 }}>
-              {[
-                { label: "DAYS", val: cdDays, color: "#ff4ecd" },
-                { label: "HOURS", val: cdHours, color: "#ff8a3d" },
-                { label: "MINS", val: cdMins, color: "#38e8ff" },
-                { label: "SECS", val: cdSecs, color: "#ffd166" },
-              ].map((u) => (
-                <div
-                  key={u.label}
-                  style={{
-                    background: "rgba(2,6,23,0.75)",
-                    borderRadius: 12,
-                    padding: "12px 6px",
-                    textAlign: "center",
-                    borderBottom: "3px solid " + u.color,
-                  }}
-                >
-                  <div style={{ fontSize: 24, fontWeight: 900, fontVariantNumeric: "tabular-nums" }}>
-                    {u.val}
-                  </div>
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", color: u.color }}>
-                    {u.label}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <div className="text-[10px] font-bold tracking-[0.22em] text-cyan-300/80">PLAY • MANAGE • WIN</div>
           </div>
 
-          <div className="il-card il-ipl-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 10 }}>
-              <div>
-                <div style={{ fontSize: 11, color: "var(--gold)", fontWeight: 800, letterSpacing: "0.1em" }}>
-                  MY PLAYER CARD - RANK SCORE {playerRankScore(currentUser)}
-                </div>
-                <h2 style={{ margin: "4px 0 4px 0", fontSize: 24, fontWeight: 900 }}>
-                  {currentUser.name}
-                </h2>
-                <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                  <span className="il-pill" style={{ background: "rgba(56,189,248,0.18)", color: "#7dd3fc" }}>
-                    {currentUser.role}
-                  </span>
-                  <span className="il-pill" style={{ background: "rgba(167,139,250,0.2)", color: "#ddd6fe" }}>
-                    <Award size={12} /> {currentUser.funAward}
-                  </span>
-                  {orangeCapHolder.id === currentUser.id && (
-                    <span className="il-pill" style={{ background: "rgba(251,146,60,0.25)", color: "#fdba74" }}>
-                      <Crown size={12} /> Orange Cap
-                    </span>
-                  )}
-                  {purpleCapHolder.id === currentUser.id && (
-                    <span className="il-pill" style={{ background: "rgba(168,85,247,0.28)", color: "#e9d5ff" }}>
-                      <Crown size={12} /> Purple Cap
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                className="il-btn"
-                style={{ padding: "7px 11px", fontSize: 12 }}
-                onClick={() => {
-                  setShowPassForm((v) => !v);
-                  setPassNotice("");
-                }}
-              >
-                <Key size={14} /> Change Pass
-              </button>
-            </div>
-
-            <div className="il-grid-4 il-resp-2" style={{ marginTop: 16 }}>
-              <div style={{ background: "rgba(2,6,23,0.72)", padding: 12, borderRadius: 12, textAlign: "center" }}>
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>TOTAL RUNS</div>
-                <div style={{ fontSize: 26, fontWeight: 900, color: "var(--cyan)" }}>{currentUser.runs}</div>
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>SR {userSR}</div>
-              </div>
-              <div style={{ background: "rgba(2,6,23,0.72)", padding: 12, borderRadius: 12, textAlign: "center" }}>
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>TOTAL WICKETS</div>
-                <div style={{ fontSize: 26, fontWeight: 900, color: "var(--purple)" }}>{currentUser.wickets}</div>
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>Econ {userEcon}</div>
-              </div>
-              <div style={{ background: "rgba(2,6,23,0.72)", padding: 12, borderRadius: 12, textAlign: "center" }}>
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>MATCHES</div>
-                <div style={{ fontSize: 26, fontWeight: 900 }}>{currentUser.matches}</div>
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                  4s: {currentUser.fours} / 6s: {currentUser.sixes}
-                </div>
-              </div>
-              <div style={{ background: "rgba(2,6,23,0.72)", padding: 12, borderRadius: 12, textAlign: "center" }}>
-                <div style={{ fontSize: 11, color: "var(--muted)" }}>MY MONEY</div>
-                <div
-                  style={{
-                    fontSize: 20,
-                    fontWeight: 900,
-                    color: currentUser.finesDue > 0 ? "var(--rose)" : "var(--emerald)",
-                  }}
-                >
-                  {currentUser.finesDue > 0 ? "Due Rs." + currentUser.finesDue : "Clear"}
-                </div>
-                <div style={{ fontSize: 11, color: "var(--gold)" }}>
-                  Adv Credit: Rs.{currentUser.advanceCredit}
-                </div>
-              </div>
-            </div>
-
-            {showPassForm && (
-              <form
-                onSubmit={handleChangeNormalPass}
-                style={{
-                  marginTop: 14,
-                  padding: 12,
-                  borderRadius: 12,
-                  background: "rgba(2,6,23,0.8)",
-                  border: "1px solid var(--border)",
-                  display: "grid",
-                  gap: 8,
-                }}
-              >
-                <div style={{ fontSize: 12, color: "var(--gold)", fontWeight: 700 }}>
-                  Change Normal Password {currentUser.isAdmin ? "(Admin Password cannot be changed)" : ""}
-                </div>
-                <div style={{ display: "flex", gap: 8 }}>
-                  <input
-                    className="il-input"
-                    type="text"
-                    placeholder="Enter new normal password"
-                    value={newNormalPass}
-                    onChange={(e) => setNewNormalPass(e.target.value)}
-                  />
-                  <button type="submit" className="il-btn il-btn-primary">
-                    Save
-                  </button>
-                </div>
-                {passNotice && <div style={{ fontSize: 12, color: "var(--emerald)" }}>{passNotice}</div>}
-              </form>
-            )}
-          </div>
-
-          <div className="il-grid-2" style={{ marginBottom: 12 }}>
-            <div className="il-card" style={{ marginBottom: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700 }}>CLUB TREASURY BALANCE</div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: "var(--emerald)", marginTop: 4 }}>
-                Rs.{clubNetBalance}
-              </div>
-            </div>
-            <div className="il-card" style={{ marginBottom: 0 }}>
-              <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700 }}>ADVANCE CREDIT POOL</div>
-              <div style={{ fontSize: 26, fontWeight: 900, color: "var(--gold)", marginTop: 4 }}>
-                Rs.{totalAdvances}
-              </div>
-            </div>
-          </div>
-
-          <div className="il-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
-                <CheckCircle size={16} color="#34d399" /> Next Match Playing Poll
-              </div>
-              <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                {state.poll.filter((v) => v.choice === "IN").length} IN /{" "}
-                {state.poll.filter((v) => v.choice === "MAYBE").length} MAYBE /{" "}
-                {state.poll.filter((v) => v.choice === "OUT").length} OUT
-              </span>
-            </div>
-
-            <div className="il-grid-3">
-              {(["IN", "MAYBE", "OUT"] as PollChoice[]).map((choice) => {
-                const activeCls =
-                  myPollVote === choice
-                    ? choice === "IN"
-                      ? "il-btn-emerald"
-                      : choice === "OUT"
-                      ? "il-btn-danger"
-                      : "il-btn-gold"
-                    : "";
-                return (
-                  <button
-                    key={choice}
-                    type="button"
-                    className={"il-btn " + activeCls}
-                    onClick={() => handleVotePoll(choice)}
-                  >
-                    {choice}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-              {state.poll.map((v) => (
-                <span
-                  key={v.playerId}
-                  className="il-pill"
-                  style={{
-                    background:
-                      v.choice === "IN"
-                        ? "rgba(52,211,153,0.16)"
-                        : v.choice === "OUT"
-                        ? "rgba(244,63,94,0.16)"
-                        : "rgba(251,191,36,0.16)",
-                    color: v.choice === "IN" ? "#6ee7b7" : v.choice === "OUT" ? "#fda4af" : "#fde68a",
-                  }}
-                >
-                  {v.playerName.split(" ")[0]}: {v.choice}
-                </span>
-              ))}
-            </div>
-          </div>
-
-          <div className="il-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-              <div>
-                <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
-                  <MapPin size={16} color="#38bdf8" /> Ground Direction
-                </div>
-                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 3 }}>{state.groundName}</div>
-              </div>
-              <div style={{ display: "flex", gap: 8 }}>
-                <a
-                  href={state.groundMapUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="il-btn il-btn-primary"
-                  style={{ textDecoration: "none" }}
-                >
-                  <MapPin size={15} /> Open Google Maps
-                </a>
-                {isAdmin && (
-                  <button
-                    type="button"
-                    className="il-btn"
-                    onClick={() =>
-                      requireAdminPin("Update Ground Map Location", () => {
-                        setGroundNameDraft(state.groundName);
-                        setGroundUrlDraft(state.groundMapUrl);
-                        setEditingGround(true);
-                      })
-                    }
-                  >
-                    Edit
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {editingGround && (
-              <div style={{ marginTop: 12, display: "grid", gap: 8 }}>
-                <input
-                  className="il-input"
-                  value={groundNameDraft}
-                  onChange={(e) => setGroundNameDraft(e.target.value)}
-                  placeholder="Ground Name"
-                />
-                <input
-                  className="il-input"
-                  value={groundUrlDraft}
-                  onChange={(e) => setGroundUrlDraft(e.target.value)}
-                  placeholder="Google Maps Link"
-                />
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    type="button"
-                    className="il-btn il-btn-gold"
-                    onClick={() => {
-                      setState((prev) => ({
-                        ...prev,
-                        groundName: groundNameDraft.trim() || prev.groundName,
-                        groundMapUrl: groundUrlDraft.trim() || prev.groundMapUrl,
-                      }));
-                      setEditingGround(false);
-                    }}
-                  >
-                    Save Ground
-                  </button>
-                  <button type="button" className="il-btn" onClick={() => setEditingGround(false)}>
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* MATCH TAB */}
-      {tab === "match" && (
-        <div>
-          {!lm && (
-            <div>
-              <div className="il-card il-ipl-card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: "var(--gold)", fontWeight: 800 }}>MATCH CENTER</div>
-                    <h2 style={{ margin: "4px 0 0 0", fontSize: 20 }}>
-                      {state.scheduledMatch ? state.scheduledMatch.title : "No Active Match Right Now"}
-                    </h2>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
-                      Scorecard and Live Scoring unlock once a match is created and started.
-                    </div>
-                  </div>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      className="il-btn il-btn-gold"
-                      onClick={() =>
-                        requireAdminPin("Create New Match (3-Day Advance Setup)", () =>
-                          setShowCreateWizard(true)
-                        )
-                      }
-                    >
-                      <Plus size={16} /> Create Match
-                    </button>
-                  )}
-                </div>
-
-                {showCreateWizard && (
-                  <div
-                    style={{
-                      marginTop: 14,
-                      padding: 14,
-                      borderRadius: 14,
-                      background: "rgba(2,6,23,0.85)",
-                      border: "1px solid var(--border)",
-                      display: "grid",
-                      gap: 10,
-                    }}
-                  >
-                    <div style={{ fontWeight: 800, color: "var(--gold)" }}>
-                      Match Setup (Overs, Date/Time, Players)
-                    </div>
-                    <input
-                      className="il-input"
-                      value={wizTitle}
-                      onChange={(e) => setWizTitle(e.target.value)}
-                      placeholder="Match Title"
-                    />
-                    <div className="il-grid-2">
-                      <input
-                        className="il-input"
-                        type="datetime-local"
-                        value={wizDateTime}
-                        onChange={(e) => setWizDateTime(e.target.value)}
-                      />
-                      <select
-                        className="il-select"
-                        value={wizOvers}
-                        onChange={(e) => setWizOvers(Number(e.target.value))}
-                      >
-                        {[5, 6, 8, 10, 12, 15, 20].map((ov) => (
-                          <option key={ov} value={ov}>
-                            {ov} Overs
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="il-grid-2">
-                      <input
-                        className="il-input"
-                        value={wizTeamAName}
-                        onChange={(e) => setWizTeamAName(e.target.value)}
-                        placeholder="Team A Name"
-                      />
-                      <input
-                        className="il-input"
-                        value={wizTeamBName}
-                        onChange={(e) => setWizTeamBName(e.target.value)}
-                        placeholder="Team B Name"
-                      />
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
-                        Select Players ({wizSelectedIds.length} selected - min 4 for Auto Team Splitter):
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {state.players.map((p) => {
-                          const picked = wizSelectedIds.includes(p.id);
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              className={"il-btn " + (picked ? "il-btn-primary" : "")}
-                              style={{ padding: "6px 10px", fontSize: 12 }}
-                              onClick={() =>
-                                setWizSelectedIds((prev) =>
-                                  prev.includes(p.id)
-                                    ? prev.filter((id) => id !== p.id)
-                                    : [...prev, p.id]
-                                )
-                              }
-                            >
-                              {p.name.split(" ")[0]} ({playerRankScore(p)})
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        disabled={wizSelectedIds.length < 4}
-                        className="il-btn il-btn-gold"
-                        onClick={createScheduledMatch}
-                      >
-                        <Shuffle size={15} /> Create and Auto-Split Teams
-                      </button>
-                      <button type="button" className="il-btn" onClick={() => setShowCreateWizard(false)}>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {state.scheduledMatch && (
-                <div className="il-card">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                    <div>
-                      <span className="il-pill" style={{ background: "rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
-                        {state.scheduledMatch.overs} Overs - {state.scheduledMatch.dateTime.replace("T", " ")}
-                      </span>
-                      <h3 style={{ margin: "6px 0 0 0" }}>Auto-Split Fair Teams and Captains</h3>
-                    </div>
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        className="il-btn"
-                        style={{ fontSize: 12 }}
-                        onClick={() =>
-                          requireAdminPin("Re-decide Captains and Vice-Captains", reRollScheduledTeamsAndCaptains)
-                        }
-                      >
-                        <Shuffle size={14} /> Auto-Decide C / VC
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="il-grid-2 il-resp-1" style={{ marginTop: 12 }}>
-                    <div style={{ background: "rgba(2,6,23,0.75)", padding: 12, borderRadius: 12, border: "1px solid rgba(56,189,248,0.3)" }}>
-                      <div style={{ fontWeight: 900, color: "var(--cyan)" }}>{state.scheduledMatch.teamAName}</div>
-                      <div style={{ fontSize: 12, color: "var(--gold)", marginTop: 4 }}>
-                        C: {state.scheduledMatch.teamACaptain} / VC: {state.scheduledMatch.teamAViceCaptain}
-                      </div>
-                      <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 5 }}>
-                        {state.players
-                          .filter((p) => state.scheduledMatch?.teamAIds.includes(p.id))
-                          .map((p) => (
-                            <span key={p.id} className="il-pill" style={{ background: "#1e293b", color: "#e2e8f0" }}>
-                              {p.name}
-                            </span>
-                          ))}
-                      </div>
-                    </div>
-
-                    <div style={{ background: "rgba(2,6,23,0.75)", padding: 12, borderRadius: 12, border: "1px solid rgba(251,191,36,0.3)" }}>
-                      <div style={{ fontWeight: 900, color: "var(--gold)" }}>{state.scheduledMatch.teamBName}</div>
-                      <div style={{ fontSize: 12, color: "var(--cyan)", marginTop: 4 }}>
-                        C: {state.scheduledMatch.teamBCaptain} / VC: {state.scheduledMatch.teamBViceCaptain}
-                      </div>
-                      <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 5 }}>
-                        {state.players
-                          .filter((p) => state.scheduledMatch?.teamBIds.includes(p.id))
-                          .map((p) => (
-                            <span key={p.id} className="il-pill" style={{ background: "#1e293b", color: "#e2e8f0" }}>
-                              {p.name}
-                            </span>
-                          ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "rgba(2,6,23,0.72)", border: "1px solid var(--border)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                      <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
-                        <Coins size={16} color="#fbbf24" className={coinFlipping ? "il-coin-spin" : ""} /> Digital Coin Toss
-                      </div>
-                      <button
-                        type="button"
-                        className="il-btn il-btn-gold"
-                        disabled={coinFlipping}
-                        onClick={() => flipCoin("match")}
-                      >
-                        {coinFlipping ? "Flipping..." : "Flip Coin"}
-                      </button>
-                    </div>
-                    {(coinResult || state.scheduledMatch.tossWinner) && (
-                      <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                        <div style={{ fontSize: 13 }}>
-                          Coin: <strong style={{ color: "var(--gold)" }}>{coinResult || "DONE"}</strong> - Toss Winner:{" "}
-                          <strong style={{ color: "var(--cyan)" }}>{state.scheduledMatch.tossWinner}</strong>
-                        </div>
-                        <div style={{ display: "flex", gap: 6 }}>
-                          {(["BAT", "BOWL"] as const).map((dec) => (
-                            <button
-                              key={dec}
-                              type="button"
-                              className={"il-btn " + (state.scheduledMatch?.tossDecision === dec ? "il-btn-emerald" : "")}
-                              style={{ padding: "6px 12px", fontSize: 12 }}
-                              onClick={() =>
-                                setState((prev) =>
-                                  prev.scheduledMatch
-                                    ? {
-                                        ...prev,
-                                        scheduledMatch: { ...prev.scheduledMatch, tossDecision: dec },
-                                      }
-                                    : prev
-                                )
-                              }
-                            >
-                              Choose {dec}
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "rgba(2,6,23,0.72)", border: "1px solid var(--border)" }}>
-                    <div style={{ fontWeight: 800, marginBottom: 8 }}>Match Day Checklist</div>
-                    <div style={{ display: "grid", gap: 6 }}>
-                      {state.scheduledMatch.checklist.map((item) => (
-                        <label
-                          key={item.id}
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            fontSize: 13,
-                            cursor: "pointer",
-                            textDecoration: item.done ? "line-through" : "none",
-                            color: item.done ? "var(--emerald)" : "var(--text)",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={item.done}
-                            onChange={() =>
-                              setState((prev) =>
-                                prev.scheduledMatch
-                                  ? {
-                                      ...prev,
-                                      scheduledMatch: {
-                                        ...prev.scheduledMatch,
-                                        checklist: prev.scheduledMatch.checklist.map((c) =>
-                                          c.id === item.id ? { ...c, done: !c.done } : c
-                                        ),
-                                      },
-                                    }
-                                  : prev
-                              )
-                            }
-                          />
-                          {item.label}
-                        </label>
-                      ))}
-                    </div>
-                    <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                      <input
-                        className="il-input"
-                        placeholder="Add checklist item..."
-                        value={newChecklistLabel}
-                        onChange={(e) => setNewChecklistLabel(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="il-btn"
-                        onClick={() => {
-                          if (!newChecklistLabel.trim()) return;
-                          setState((prev) =>
-                            prev.scheduledMatch
-                              ? {
-                                  ...prev,
-                                  scheduledMatch: {
-                                    ...prev.scheduledMatch,
-                                    checklist: [
-                                      ...prev.scheduledMatch.checklist,
-                                      { id: uid("chk"), label: newChecklistLabel.trim(), done: false },
-                                    ],
-                                  },
-                                }
-                              : prev
-                          );
-                          setNewChecklistLabel("");
-                        }}
-                      >
-                        <Plus size={15} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {isAdmin && (
-                    <div style={{ marginTop: 14, display: "flex", gap: 8, flexWrap: "wrap" }}>
-                      <button
-                        type="button"
-                        className="il-btn il-btn-emerald"
-                        style={{ flex: 1, padding: 13 }}
-                        onClick={() =>
-                          requireAdminPin("Start Live Match Scoring", startLiveMatchFromScheduled)
-                        }
-                      >
-                        <Play size={16} /> Start Live Match and Scorecard
-                      </button>
-                      <button
-                        type="button"
-                        className="il-btn il-btn-danger"
-                        onClick={() =>
-                          requireAdminPin("Cancel Scheduled Match", () =>
-                            setState((prev) => ({ ...prev, scheduledMatch: null }))
-                          )
-                        }
-                      >
-                        <Trash2 size={15} />
-                      </button>
-                    </div>
-                  )}
-                </div>
-              )}
-
-              <div className="il-card">
-                <div style={{ fontWeight: 800, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                  <Trophy size={16} color="#fbbf24" /> Match History ({state.matchHistory.length})
-                </div>
-                {state.matchHistory.length === 0 ? (
-                  <div style={{ fontSize: 13, color: "var(--muted)" }}>
-                    Completed matches will appear here with MVP and WhatsApp scorecard links.
-                  </div>
-                ) : (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {state.matchHistory.map((h) => (
-                      <div
-                        key={h.id}
-                        style={{
-                          padding: 12,
-                          borderRadius: 12,
-                          background: "rgba(2,6,23,0.72)",
-                          border: "1px solid var(--border)",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                          flexWrap: "wrap",
-                          gap: 8,
-                        }}
-                      >
-                        <div>
-                          <div style={{ fontWeight: 800 }}>{h.title}</div>
-                          <div style={{ fontSize: 12, color: "var(--cyan)" }}>{h.summary}</div>
-                          <div style={{ fontSize: 12, color: "var(--gold)" }}>
-                            {h.winner} - MVP: {h.mvp} ({h.date})
-                          </div>
-                        </div>
-                        <a
-                          href={"https://wa.me/?text=" + encodeURIComponent(h.scorecardText)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="il-btn il-btn-emerald"
-                          style={{ textDecoration: "none", padding: "7px 10px", fontSize: 12 }}
-                        >
-                          <Share2 size={14} /> WhatsApp
-                        </a>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {lm && (
-            <div>
-              {lm.freeHitActive && (
-                <div className="il-freehit-banner">
-                  FREE HIT ACTIVE! ONLY RUN OUT ALLOWED
-                </div>
-              )}
-
-              <div className="il-card il-ipl-card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                  <div>
-                    <span className="il-pill" style={{ background: "rgba(244,63,94,0.22)", color: "#fda4af" }}>
-                      <Activity size={12} /> {lm.isSuperOver ? "SUPER OVER" : "INNINGS " + lm.innings} - {lm.title}
-                    </span>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{lm.tossInfo}</div>
-                  </div>
-
-                  <a
-                    href={"https://wa.me/?text=" + encodeURIComponent(buildWhatsappScorecard(lm))}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="il-btn il-btn-emerald"
-                    style={{ textDecoration: "none", padding: "7px 11px", fontSize: 12 }}
-                  >
-                    <Share2 size={14} /> WhatsApp Scorecard
-                  </a>
-                </div>
-
-                <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 14, color: "var(--gold)", fontWeight: 800 }}>
-                      {lm.battingTeam} vs {lm.bowlingTeam}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 4 }}>
-                      <span style={{ fontSize: 44, fontWeight: 900, lineHeight: 1 }}>
-                        {lm.runs}/{lm.wickets}
-                      </span>
-                      <span style={{ fontSize: 18, fontWeight: 800, color: "var(--cyan)" }}>
-                        ({formatOvers(lm.balls)} / {lm.totalOvers} ov)
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 13 }}>
-                      CRR: <strong>{lmCrr}</strong>
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--gold)", marginTop: 2 }}>
-                      Auto MVP: <strong>{computeLiveMvp(lm)}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {lm.innings === 2 && lm.target !== null && (
-                  <div
-                    style={{
-                      marginTop: 12,
-                      padding: 12,
-                      borderRadius: 12,
-                      background: "rgba(2,6,23,0.8)",
-                      border: "1px solid rgba(56,189,248,0.35)",
-                    }}
-                  >
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, flexWrap: "wrap", gap: 6 }}>
-                      <span style={{ color: "var(--gold)" }}>LIVE CHASE CALCULATOR - Target {lm.target}</span>
-                      <span style={{ color: "var(--emerald)" }}>
-                        Need {lmRunsNeeded} runs in {lmBallsLeft} balls (RRR {lmRrr})
-                      </span>
-                    </div>
-                    <div style={{ height: 8, background: "#1e293b", borderRadius: 99, overflow: "hidden", marginTop: 8 }}>
-                      <div
-                        style={{
-                          height: "100%",
-                          width: Math.min(100, Math.round((lm.runs / Math.max(1, lm.target)) * 100)) + "%",
-                          background: "linear-gradient(90deg, #38bdf8, #34d399, #fbbf24)",
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {lm.resultText && (
-                  <div
-                    style={{
-                      marginTop: 12,
-                      padding: 12,
-                      borderRadius: 12,
-                      background: "rgba(52,211,153,0.18)",
-                      border: "1px solid rgba(52,211,153,0.5)",
-                      fontWeight: 900,
-                      color: "#6ee7b7",
-                      textAlign: "center",
-                    }}
-                  >
-                    {lm.resultText}
-                  </div>
-                )}
-              </div>
-
-              <div className="il-card">
-                <div className="il-grid-3 il-resp-1">
-                  <div style={{ background: "rgba(2,6,23,0.75)", padding: 10, borderRadius: 12, border: "1px solid rgba(251,191,36,0.4)" }}>
-                    <div style={{ fontSize: 10, color: "var(--gold)", fontWeight: 800 }}>STRIKER *</div>
-                    <select
-                      className="il-select"
-                      style={{ marginTop: 4, padding: "6px 8px", fontSize: 13 }}
-                      value={lm.striker}
-                      disabled={!isAdmin}
-                      onChange={(e) =>
-                        setState((prev) =>
-                          prev.liveMatch ? { ...prev, liveMatch: { ...prev.liveMatch, striker: e.target.value } } : prev
-                        )
-                      }
-                    >
-                      {lm.battingPlayers.map((name) => (
-                        <option key={name} value={name}>
-                          {name} ({lm.batters[name]?.runs ?? 0}*)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ background: "rgba(2,6,23,0.75)", padding: 10, borderRadius: 12 }}>
-                    <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>NON-STRIKER</div>
-                    <select
-                      className="il-select"
-                      style={{ marginTop: 4, padding: "6px 8px", fontSize: 13 }}
-                      value={lm.nonStriker}
-                      disabled={!isAdmin}
-                      onChange={(e) =>
-                        setState((prev) =>
-                          prev.liveMatch ? { ...prev, liveMatch: { ...prev.liveMatch, nonStriker: e.target.value } } : prev
-                        )
-                      }
-                    >
-                      {lm.battingPlayers.map((name) => (
-                        <option key={name} value={name}>
-                          {name} ({lm.batters[name]?.runs ?? 0})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ background: "rgba(2,6,23,0.75)", padding: 10, borderRadius: 12, border: "1px solid rgba(56,189,248,0.35)" }}>
-                    <div style={{ fontSize: 10, color: "var(--cyan)", fontWeight: 800 }}>BOWLER</div>
-                    <div style={{ fontWeight: 800, marginTop: 6, fontSize: 14 }}>{lm.bowler}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {lm.bowlers[lm.bowler]?.wickets ?? 0}/{lm.bowlers[lm.bowler]?.runs ?? 0} (
-                      {formatOvers(lm.bowlers[lm.bowler]?.balls ?? 0)} ov)
-                    </div>
-                  </div>
-                </div>
-
-                {isAdmin ? (
-                  <>
-                    <div className="il-grid-4" style={{ marginTop: 12 }}>
-                      {[0, 1, 2, 3, 4, 6].map((run) => {
-                        const runCls = run === 4 ? "il-btn-primary" : run === 6 ? "il-btn-gold" : "";
-                        return (
-                          <button
-                            key={run}
-                            type="button"
-                            disabled={lm.isCompleted}
-                            className={"il-btn " + runCls}
-                            onClick={() => recordLiveBall(run)}
-                          >
-                            +{run}
-                          </button>
-                        );
-                      })}
-                      <button
-                        type="button"
-                        disabled={lm.isCompleted}
-                        className="il-btn il-btn-purple"
-                        onClick={() => recordLiveBall(0, { isWide: true })}
-                      >
-                        WD
-                      </button>
-                      <button
-                        type="button"
-                        disabled={lm.isCompleted}
-                        className="il-btn il-btn-purple"
-                        onClick={() => recordLiveBall(0, { isNoBall: true })}
-                      >
-                        NB
-                      </button>
-                    </div>
-
-                    <div className="il-grid-2" style={{ marginTop: 10 }}>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <select
-                          className="il-select"
-                          style={{ width: "48%" }}
-                          value={wicketType}
-                          onChange={(e) => setWicketType(e.target.value)}
-                        >
-                          <option value="Bowled">Bowled</option>
-                          <option value="Caught">Caught</option>
-                          <option value="Run Out">Run Out</option>
-                          <option value="LBW">LBW</option>
-                          <option value="Stumped">Stumped</option>
-                        </select>
-                        <button
-                          type="button"
-                          disabled={lm.isCompleted}
-                          className="il-btn il-btn-danger"
-                          style={{ flex: 1 }}
-                          onClick={() => recordLiveBall(0, { isWicket: true })}
-                        >
-                          <AlertTriangle size={15} /> OUT
-                        </button>
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={lm.history.length === 0}
-                        className="il-btn"
-                        onClick={undoLiveBall}
-                      >
-                        <RotateCcw size={15} /> Undo Ball
-                      </button>
-                    </div>
-
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                      <button
-                        type="button"
-                        disabled={lm.isCompleted}
-                        className="il-btn"
-                        style={{ fontSize: 12 }}
-                        onClick={handleRetiredHurt}
-                      >
-                        Retired Hurt
-                      </button>
-                      <button
-                        type="button"
-                        disabled={lm.isCompleted}
-                        className="il-btn"
-                        style={{ fontSize: 12 }}
-                        onClick={() => {
-                          setSwapBowlerName(lm.bowlingPlayers[0] || "");
-                          setShowSwapBowler((s) => !s);
-                        }}
-                      >
-                        Mid-Over Bowler Swap
-                      </button>
-
-                      {lm.innings === 1 && (
-                        <button
-                          type="button"
-                          className="il-btn il-btn-primary"
-                          style={{ fontSize: 12 }}
-                          onClick={startSecondInnings}
-                        >
-                          Start 2nd Innings
-                        </button>
-                      )}
-
-                      {lm.isTied && (
-                        <button
-                          type="button"
-                          className="il-btn il-btn-gold"
-                          style={{ fontSize: 12 }}
-                          onClick={launchSuperOver}
-                        >
-                          Start Super Over
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        className="il-btn il-btn-emerald"
-                        style={{ fontSize: 12 }}
-                        onClick={() =>
-                          requireAdminPin("Finish Match and Save to History", archiveLiveMatch)
-                        }
-                      >
-                        Finish and Save Match
-                      </button>
-                    </div>
-
-                    {showSwapBowler && (
-                      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                        <select
-                          className="il-select"
-                          value={swapBowlerName}
-                          onChange={(e) => setSwapBowlerName(e.target.value)}
-                        >
-                          {lm.bowlingPlayers.map((name) => (
-                            <option key={name} value={name}>
-                              {name}
-                            </option>
-                          ))}
-                        </select>
-                        <button type="button" className="il-btn il-btn-gold" onClick={handleMidOverSwap}>
-                          Swap Now
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div style={{ marginTop: 10, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>
-                    Live viewer mode - only Admins can update the scorecard.
-                  </div>
-                )}
-              </div>
-
-              <div className="il-card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <Shield size={16} color="#fbbf24" /> Umpire Terminal
-                  </span>
-                  {umpireBanner && (
-                    <span className="il-pill" style={{ background: "rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
-                      {umpireBanner}
-                    </span>
-                  )}
-                </div>
-                <div className="il-grid-4">
-                  {["FOUR!", "SIX!", "OUT!", "NOT OUT", "WIDE", "NO BALL", "FREE HIT", "DRINKS"].map((sig) => (
-                    <button
-                      key={sig}
-                      type="button"
-                      className="il-btn"
-                      style={{ padding: "8px 6px", fontSize: 12 }}
-                      onClick={() => {
-                        setUmpireBanner("Umpire: " + sig);
-                        speak(sig);
-                      }}
-                    >
-                      {sig}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="il-card">
-                <div style={{ fontWeight: 800, marginBottom: 10 }}>Over-by-Over Summary</div>
-                {oversGrouped.length === 0 ? (
-                  <div style={{ fontSize: 13, color: "var(--muted)" }}>No balls bowled in this innings yet.</div>
-                ) : (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {oversGrouped.map((ov) => (
-                      <div
-                        key={ov.overNum}
-                        style={{
-                          background: "rgba(2,6,23,0.72)",
-                          padding: "10px 12px",
-                          borderRadius: 12,
-                          border: "1px solid var(--border)",
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
-                          <strong style={{ color: "var(--gold)" }}>Over {ov.overNum}</strong>
-                          <span>
-                            {ov.runs} runs - {ov.wickets} wkt(s)
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {ov.balls.map((b) => (
-                            <span key={b.id} className="il-ball" style={renderBallStyle(b)}>
-                              {renderBallText(b)}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* SQUAD TAB */}
-      {tab === "squad" && (
-        <div>
-          <div className="il-grid-2" style={{ marginBottom: 12 }}>
-            <div
-              className="il-card"
-              style={{
-                marginBottom: 0,
-                background: "linear-gradient(135deg, rgba(234,88,12,0.35), rgba(15,23,42,0.94))",
-                borderColor: "rgba(251,146,60,0.6)",
-              }}
-            >
-              <div style={{ fontSize: 11, fontWeight: 900, color: "#fdba74", display: "flex", alignItems: "center", gap: 5 }}>
-                <Crown size={14} /> AUTO ORANGE CAP
-              </div>
-              <div style={{ fontSize: 19, fontWeight: 900, marginTop: 4 }}>{orangeCapHolder.name}</div>
-              <div style={{ fontSize: 13, color: "#ffedd5" }}>{orangeCapHolder.runs} Runs</div>
-            </div>
-
-            <div
-              className="il-card"
-              style={{
-                marginBottom: 0,
-                background: "linear-gradient(135deg, rgba(126,34,206,0.35), rgba(15,23,42,0.94))",
-                borderColor: "rgba(192,132,252,0.6)",
-              }}
-            >
-              <div style={{ fontSize: 11, fontWeight: 900, color: "#e9d5ff", display: "flex", alignItems: "center", gap: 5 }}>
-                <Crown size={14} /> AUTO PURPLE CAP
-              </div>
-              <div style={{ fontSize: 19, fontWeight: 900, marginTop: 4 }}>{purpleCapHolder.name}</div>
-              <div style={{ fontSize: 13, color: "#f3e8ff" }}>{purpleCapHolder.wickets} Wickets</div>
-            </div>
-          </div>
-
-          {state.players
-            .slice()
-            .sort((a, b) => playerRankScore(b) - playerRankScore(a))
-            .map((p, idx) => {
-              const sr = p.ballsFaced > 0 ? ((p.runs / p.ballsFaced) * 100).toFixed(1) : "0.0";
-              const econ = p.oversBowled > 0 ? (p.runsConceded / p.oversBowled).toFixed(2) : "0.00";
+          <nav className="space-y-1">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const active = activeTab === item.id;
               return (
-                <div key={p.id} className="il-card">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                    <div>
-                      <div style={{ display: "flex", alignItems: "center", gap: 6, flexWrap: "wrap" }}>
-                        <span className="il-pill" style={{ background: "rgba(56,189,248,0.18)", color: "#7dd3fc" }}>
-                          #{idx + 1}
-                        </span>
-                        <strong style={{ fontSize: 16 }}>{p.name}</strong>
-                        <span style={{ fontSize: 12, color: "var(--muted)" }}>({p.role})</span>
-                      </div>
-                      <div style={{ marginTop: 5, display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        <span className="il-pill" style={{ background: "rgba(251,191,36,0.18)", color: "#fde68a" }}>
-                          <Award size={12} /> {p.funAward}
-                        </span>
-                        <span style={{ fontSize: 11, color: "var(--muted)" }}>
-                          Rank Pts: {playerRankScore(p)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        className="il-btn"
-                        style={{ padding: "6px 10px", fontSize: 12 }}
-                        onClick={() =>
-                          requireAdminPin("Edit " + p.name + " Stats and Award", () => {
-                            setEditPlayerId(p.id);
-                            setEditAwardText(p.funAward);
-                          })
-                        }
-                      >
-                        Admin Edit
-                      </button>
-                    )}
-                  </div>
-
-                  <div className="il-grid-4" style={{ marginTop: 10, textAlign: "center" }}>
-                    <div style={{ background: "rgba(2,6,23,0.7)", padding: 8, borderRadius: 10 }}>
-                      <div style={{ fontSize: 10, color: "var(--muted)" }}>RUNS</div>
-                      <div style={{ fontWeight: 900 }}>{p.runs}</div>
-                    </div>
-                    <div style={{ background: "rgba(2,6,23,0.7)", padding: 8, borderRadius: 10 }}>
-                      <div style={{ fontSize: 10, color: "var(--muted)" }}>SR</div>
-                      <div style={{ fontWeight: 900 }}>{sr}</div>
-                    </div>
-                    <div style={{ background: "rgba(2,6,23,0.7)", padding: 8, borderRadius: 10 }}>
-                      <div style={{ fontSize: 10, color: "var(--muted)" }}>WKTS</div>
-                      <div style={{ fontWeight: 900 }}>{p.wickets}</div>
-                    </div>
-                    <div style={{ background: "rgba(2,6,23,0.7)", padding: 8, borderRadius: 10 }}>
-                      <div style={{ fontSize: 10, color: "var(--muted)" }}>ECON</div>
-                      <div style={{ fontWeight: 900 }}>{econ}</div>
-                    </div>
-                  </div>
-
-                  {editPlayerId === p.id && (
-                    <div style={{ marginTop: 10, padding: 10, borderRadius: 12, background: "rgba(2,6,23,0.85)", display: "grid", gap: 8 }}>
-                      <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                        <button
-                          type="button"
-                          className="il-btn il-btn-emerald"
-                          style={{ padding: "6px 10px", fontSize: 12 }}
-                          onClick={() =>
-                            setState((prev) => ({
-                              ...prev,
-                              players: prev.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, runs: pl.runs + 10, ballsFaced: pl.ballsFaced + 8 } : pl
-                              ),
-                            }))
-                          }
-                        >
-                          +10 Runs
-                        </button>
-                        <button
-                          type="button"
-                          className="il-btn il-btn-primary"
-                          style={{ padding: "6px 10px", fontSize: 12 }}
-                          onClick={() =>
-                            setState((prev) => ({
-                              ...prev,
-                              players: prev.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, wickets: pl.wickets + 1, oversBowled: pl.oversBowled + 1 } : pl
-                              ),
-                            }))
-                          }
-                        >
-                          +1 Wkt
-                        </button>
-                        <button
-                          type="button"
-                          className="il-btn il-btn-danger"
-                          style={{ padding: "6px 10px", fontSize: 12 }}
-                          onClick={() =>
-                            setState((prev) => ({
-                              ...prev,
-                              players: prev.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, finesDue: pl.finesDue + 50 } : pl
-                              ),
-                            }))
-                          }
-                        >
-                          +Rs.50 Due
-                        </button>
-                        <button
-                          type="button"
-                          className="il-btn il-btn-gold"
-                          style={{ padding: "6px 10px", fontSize: 12 }}
-                          onClick={() =>
-                            setState((prev) => ({
-                              ...prev,
-                              players: prev.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, finesDue: 0 } : pl
-                              ),
-                            }))
-                          }
-                        >
-                          Clear Dues
-                        </button>
-                        <button
-                          type="button"
-                          className="il-btn il-btn-purple"
-                          style={{ padding: "6px 10px", fontSize: 12 }}
-                          onClick={() =>
-                            setState((prev) => ({
-                              ...prev,
-                              players: prev.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, advanceCredit: pl.advanceCredit + 50 } : pl
-                              ),
-                            }))
-                          }
-                        >
-                          +Rs.50 Adv Credit
-                        </button>
-                      </div>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <input
-                          className="il-input"
-                          value={editAwardText}
-                          onChange={(e) => setEditAwardText(e.target.value)}
-                          placeholder="Fun Award Title"
-                        />
-                        <button
-                          type="button"
-                          className="il-btn il-btn-gold"
-                          onClick={() => {
-                            setState((prev) => ({
-                              ...prev,
-                              players: prev.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, funAward: editAwardText.trim() || pl.funAward } : pl
-                              ),
-                            }));
-                            setEditPlayerId("");
-                          }}
-                        >
-                          Done
-                        </button>
-                      </div>
-                    </div>
+                <button
+                  key={item.id}
+                  onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-bold transition-all cursor-pointer ${
+                    active ? theme.activePill : 'text-slate-300 hover:bg-white/8 hover:text-white'
+                  }`}
+                >
+                  <Icon className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{item.label}</span>
+                  {item.id === 'matches' && club.liveMatch && (
+                    <span className="ml-auto w-2 h-2 rounded-full bg-rose-500 animate-ping" />
                   )}
-                </div>
+                </button>
               );
             })}
-        </div>
-      )}
+          </nav>
 
-      {/* TREASURY TAB */}
-      {tab === "treasury" && (
-        <div>
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
-              <Wallet size={16} color="#34d399" /> Club Money Tracker and Pie Chart
+          {/* Subtle Ganesh Mandir Zone Lock Button (for 8 GM members) */}
+          {authBase.isGM && (
+            <button
+              onClick={openGaneshMandirGate}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl border text-xs font-bold transition-all cursor-pointer ${
+                gmUnlocked && isGMMode
+                  ? 'bg-orange-500/20 border-orange-400/50 text-orange-200'
+                  : 'bg-white/5 border-white/10 text-slate-300 hover:border-amber-400/40'
+              }`}
+            >
+              <span className="flex items-center gap-2">
+                {gmUnlocked ? <Flame className="w-4 h-4 text-orange-400" /> : <Lock className="w-3.5 h-3.5 text-amber-400" />}
+                Ganesh Mandir Zone
+              </span>
+              <span className="text-[10px] uppercase text-amber-300">{gmUnlocked ? (isGMMode ? 'Active' : 'Switch') : 'Unlock'}</span>
+            </button>
+          )}
+        </div>
+
+        {/* Bottom Theme Orbs, User Profile & Logout */}
+        <div className="pt-3 border-t border-white/10 space-y-2.5">
+          <div className="flex items-center justify-between px-2 py-1.5 rounded-xl bg-white/5 border border-white/10">
+            <span className="text-[11px] font-semibold text-slate-400">Theme</span>
+            <div className="flex items-center gap-1.5">
+              {Object.values(THEMES).map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setAppState((prev) => ({ ...prev, themeKey: t.id }))}
+                  title={t.name}
+                  className={`w-5 h-5 rounded-full bg-gradient-to-br ${t.orb} cursor-pointer transition-transform ${
+                    appState.themeKey === t.id ? 'scale-110 ring-2 ring-white' : 'opacity-70 hover:opacity-100'
+                  }`}
+                />
+              ))}
             </div>
-            <DonutPieChart
-              centerLabel={"Rs." + clubNetBalance}
-              slices={[
-                { label: "Credits", value: totalCredits, color: "#34d399" },
-                { label: "Advance Credits", value: totalAdvances, color: "#fbbf24" },
-                { label: "Fines", value: totalFines, color: "#38bdf8" },
-                { label: "Expenses", value: totalExpenses, color: "#fb7185" },
-              ]}
-            />
           </div>
 
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>
-              Member Dues and Advance Credit Balances
+          <div
+            onClick={() => setSelectedProfileId(currentUser.id)}
+            className="flex items-center gap-2.5 p-2 rounded-2xl bg-white/5 border border-white/10 hover:border-amber-400/40 cursor-pointer"
+          >
+            <PlayerAvatarSVG name={currentUser.name} jersey={currentUser.jersey} role={currentUser.role} size="sm" />
+            <div className="min-w-0">
+              <div className="text-xs font-bold text-white truncate">{currentUser.name}</div>
+              <div className="text-[11px] text-amber-300 font-semibold">
+                {isAdmin ? 'Admin' : currentUser.role}
+              </div>
             </div>
-            <div style={{ display: "grid", gap: 8 }}>
-              {state.players
-                .filter((p) => p.finesDue > 0 || p.advanceCredit > 0)
-                .map((p) => (
-                  <div
-                    key={p.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      flexWrap: "wrap",
-                      gap: 8,
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      background: "rgba(2,6,23,0.72)",
+          </div>
+
+          <button
+            onClick={handleLogout}
+            className="w-full py-2 rounded-xl border border-amber-400/40 bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 font-bold text-xs flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <LogOut className="w-3.5 h-3.5" /> Logout
+          </button>
+        </div>
+      </aside>
+
+      {/* ================= MAIN CONTENT AREA ================= */}
+      <main className="relative z-10 flex-1 min-w-0 pb-24 lg:pb-10">
+        {/* TOP HEADER BAR */}
+        <header className="sticky top-0 z-20 backdrop-blur-xl bg-[#050d24]/80 border-b border-white/10 px-4 sm:px-6 py-3">
+          <div className="max-w-6xl mx-auto flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2.5">
+              <div className="lg:hidden">
+                <LionCrestSVG size={42} onClick={handleCrestTap} isGM={isGMMode} />
+              </div>
+              <div>
+                <h1 className="text-base sm:text-xl font-black italic tracking-tight bg-gradient-to-r from-white via-amber-200 to-amber-400 bg-clip-text text-transparent">
+                  {isGMMode ? 'GANESH MANDIR CRICKET CLUB' : 'INDORE LEGENDS'}
+                </h1>
+                <p className="text-[10px] font-bold tracking-[0.2em] text-cyan-300/85">
+                  PLAY • MANAGE • WIN
+                </p>
+              </div>
+            </div>
+
+            {/* Smooth Workspace Switcher Pill once Ganesh Mandir is unlocked */}
+            <div className="flex items-center gap-2">
+              {gmUnlocked ? (
+                <div className="inline-flex p-1 rounded-full bg-white/8 border border-amber-400/35">
+                  <button
+                    onClick={() => {
+                      setActiveClubKey('il');
+                      setSelectedProfileId(null);
                     }}
+                    className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition-all cursor-pointer ${
+                      activeClubKey === 'il'
+                        ? 'bg-gradient-to-r from-amber-400 to-yellow-400 text-slate-950 shadow'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
                   >
-                    <div>
-                      <strong>{p.name}</strong>
-                      <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                        Due:{" "}
-                        <span style={{ color: p.finesDue > 0 ? "var(--rose)" : "var(--emerald)" }}>
-                          Rs.{p.finesDue}
-                        </span>{" "}
-                        - Adv Credit: <span style={{ color: "var(--gold)" }}>Rs.{p.advanceCredit}</span>
-                      </div>
+                    Indore Legends (13)
+                  </button>
+                  <button
+                    onClick={() => {
+                      setActiveClubKey('gm');
+                      setSelectedProfileId(null);
+                    }}
+                    className={`px-3 py-1 rounded-full text-[11px] font-extrabold transition-all cursor-pointer ${
+                      activeClubKey === 'gm'
+                        ? 'bg-gradient-to-r from-orange-500 to-amber-400 text-slate-950 shadow'
+                        : 'text-slate-300 hover:text-white'
+                    }`}
+                  >
+                    Ganesh Mandir (8)
+                  </button>
+                </div>
+              ) : (
+                authBase.isGM && (
+                  <button
+                    onClick={openGaneshMandirGate}
+                    className="px-3 py-1.5 rounded-full bg-white/5 hover:bg-amber-500/15 border border-white/15 hover:border-amber-400/40 text-[11px] font-bold text-slate-300 hover:text-amber-300 inline-flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <Lock className="w-3 h-3 text-amber-400" /> Ganesh Mandir Zone
+                  </button>
+                )
+              )}
+
+              <button
+                onClick={() => setMoreDrawerOpen(true)}
+                className="lg:hidden p-2 rounded-xl bg-amber-500/15 border border-amber-400/35 text-amber-300 cursor-pointer"
+                aria-label="Open menu"
+              >
+                <MoreHorizontal className="w-4 h-4" />
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* TAB VIEWPORT */}
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-5 space-y-5">
+          {/* ============================================================== */}
+          {/* TAB 1: DASHBOARD                                               */}
+          {/* ============================================================== */}
+          {activeTab === 'dashboard' && (
+            <div className="space-y-5">
+              {/* Stadium Hero Banner */}
+              <div className={`relative rounded-3xl overflow-hidden border ${theme.accentBorder} ${theme.cardBg} backdrop-blur-xl p-5 sm:p-6 ${theme.accentGlow}`}>
+                <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  <div className="space-y-1.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/15 border border-amber-400/35 text-xs font-bold text-amber-300">
+                        <Crown className="w-3.5 h-3.5" /> Welcome back, {currentUser.name}
+                      </span>
+                      <span className="text-xs italic font-semibold text-cyan-300">Together We Rise</span>
                     </div>
-                    {p.finesDue > 0 && (
-                      <a
-                        href={
-                          "https://wa.me/?text=" +
-                          encodeURIComponent(
-                            "Indore Legends Reminder: Hi " +
-                              p.name +
-                              ", you have a pending club due/fine of Rs." +
-                              p.finesDue +
-                              ". Please clear it before the next match!"
-                          )
-                        }
-                        target="_blank"
-                        rel="noreferrer"
-                        className="il-btn il-btn-emerald"
-                        style={{ textDecoration: "none", padding: "6px 10px", fontSize: 12 }}
+                    <h2 className="text-xl sm:text-2xl font-black italic tracking-tight text-white">
+                      {isGMMode ? 'GANESH MANDIR • PLAY • MANAGE • WIN' : 'INDORE LEGENDS • PLAY • MANAGE • WIN'}
+                    </h2>
+                    <p className="text-xs text-slate-300 max-w-2xl">{club.announcement}</p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    {club.liveMatch ? (
+                      <button
+                        onClick={() => {
+                          setMatchSubTab('live');
+                          setActiveTab('matches');
+                        }}
+                        className={`px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-2 cursor-pointer ${theme.activePill}`}
                       >
-                        <Share2 size={13} /> WhatsApp Due Reminder
-                      </a>
+                        <Play className="w-4 h-4" /> Open Live Scorer
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => requireAdminPin('Create New Match', openCreateMatchWizard)}
+                        className={`px-4 py-2.5 rounded-xl font-black text-xs sm:text-sm flex items-center gap-2 cursor-pointer ${theme.activePill}`}
+                      >
+                        <Plus className="w-4 h-4" /> Create Match
+                      </button>
                     )}
                   </div>
-                ))}
-            </div>
-          </div>
+                </div>
+              </div>
 
-          {isAdmin && (
-            <div className="il-card">
-              <div style={{ fontWeight: 800, marginBottom: 10 }}>Add Treasury Entry (Admin PIN Required)</div>
-              <div style={{ display: "grid", gap: 8 }}>
-                <input
-                  className="il-input"
-                  placeholder="Title (e.g., Turf Booking, Late Fine, Advance Deposit)"
-                  value={trTitle}
-                  onChange={(e) => setTrTitle(e.target.value)}
-                />
-                <div className="il-grid-4 il-resp-2">
-                  <select
-                    className="il-select"
-                    value={trType}
-                    onChange={(e) => setTrType(e.target.value as LedgerType)}
-                  >
-                    <option value="CREDIT">Credit (+)</option>
-                    <option value="ADVANCE">Adv Credit (+)</option>
-                    <option value="FINE">Fine (+)</option>
-                    <option value="EXPENSE">Expense (-)</option>
-                  </select>
-                  <input
-                    className="il-input"
-                    type="number"
-                    min={1}
-                    placeholder="Amount Rs."
-                    value={trAmount}
-                    onChange={(e) => setTrAmount(e.target.value)}
-                  />
-                  <select
-                    className="il-select"
-                    value={trMember}
-                    onChange={(e) => setTrMember(e.target.value)}
-                  >
-                    <option value="All Squad">All Squad</option>
-                    {state.players.map((p) => (
-                      <option key={p.id} value={p.name}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="il-btn il-btn-gold"
-                    onClick={() => {
-                      const amt = Number(trAmount);
-                      if (!trTitle.trim() || !amt || amt <= 0) return;
-                      requireAdminPin("Add Treasury Transaction", () => {
-                        const entry: TreasuryEntry = {
-                          id: uid("tr"),
-                          title: trTitle.trim(),
-                          type: trType,
-                          amount: amt,
-                          memberName: trMember,
-                          date: new Date().toISOString().slice(0, 10),
-                        };
-                        setState((prev) => ({
-                          ...prev,
-                          treasury: [entry, ...prev.treasury],
-                          players:
-                            trType === "ADVANCE"
-                              ? prev.players.map((pl) =>
-                                  pl.name === trMember
-                                    ? { ...pl, advanceCredit: pl.advanceCredit + amt }
-                                    : pl
-                                )
-                              : prev.players,
-                        }));
-                        setTrTitle("");
-                        setTrAmount("");
-                      });
-                    }}
-                  >
-                    <Plus size={15} /> Save
-                  </button>
+              {/* 4 KPI CARDS */}
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <div className={`rounded-2xl border border-cyan-400/25 ${theme.cardBg} backdrop-blur-xl p-4`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-cyan-500/15 text-cyan-400">
+                      <Users className="w-4 h-4" />
+                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-white">{club.players.length}</span>
+                  </div>
+                  <div className="text-xs text-slate-400 font-semibold mt-1.5">Total Players</div>
+                </div>
+
+                <div className={`rounded-2xl border border-amber-400/25 ${theme.cardBg} backdrop-blur-xl p-4`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400">
+                      <Trophy className="w-4 h-4" />
+                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-white">{club.matchHistory.length}</span>
+                  </div>
+                  <div className="text-xs text-slate-400 font-semibold mt-1.5">Matches Played</div>
+                </div>
+
+                <div className={`rounded-2xl border border-cyan-400/25 ${theme.cardBg} backdrop-blur-xl p-4`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-emerald-500/15 text-emerald-400">
+                      <BarChart3 className="w-4 h-4" />
+                    </div>
+                    <span className="text-2xl sm:text-3xl font-black text-white">{winRatePct}%</span>
+                  </div>
+                  <div className="text-xs text-slate-400 font-semibold mt-1.5">Win Rate</div>
+                </div>
+
+                <div className={`rounded-2xl border border-amber-400/35 ${theme.cardBg} backdrop-blur-xl p-4`}>
+                  <div className="flex items-center gap-2.5">
+                    <div className="p-2 rounded-xl bg-amber-500/15 text-amber-400">
+                      <Wallet className="w-4 h-4" />
+                    </div>
+                    <span className="text-xl sm:text-2xl font-black text-amber-300">Rs. {financeSummary.net}</span>
+                  </div>
+                  <div className="text-xs text-slate-400 font-semibold mt-1.5">Club Fund</div>
+                </div>
+              </div>
+
+              {/* 3-COLUMN GRID: UPCOMING MATCH | QUICK ACTIONS | TEAM PERFORMANCE */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                {/* Upcoming Match Card */}
+                <div className={`lg:col-span-5 rounded-3xl border border-amber-400/30 ${theme.cardBg} backdrop-blur-xl p-5 flex flex-col justify-between`}>
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="font-bold text-sm sm:text-base flex items-center gap-2 text-white">
+                      <Calendar className="w-4 h-4 text-amber-400" /> Upcoming Match
+                    </h3>
+                    <button
+                      onClick={() => setActiveTab('matches')}
+                      className="text-xs font-bold text-amber-300 hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                      Match Center <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  {!club.scheduledMatch ? (
+                    <div className="flex-1 flex flex-col items-center justify-center text-center py-6 space-y-3">
+                      <div className="w-12 h-12 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center text-slate-400">
+                        <Calendar className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <div className="font-bold text-sm text-white">No Match Scheduled</div>
+                        <p className="text-xs text-slate-400 mt-0.5">
+                          Create a custom match with teams, overs, captains & coin toss.
+                        </p>
+                      </div>
+                      <button
+                        onClick={() => requireAdminPin('Create New Match', openCreateMatchWizard)}
+                        className={`px-5 py-2.5 rounded-xl font-black text-xs flex items-center gap-1.5 cursor-pointer ${theme.activePill}`}
+                      >
+                        <Plus className="w-4 h-4" /> Create Match
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-xs font-bold text-cyan-300 uppercase tracking-wider">
+                          {club.scheduledMatch.title} • {club.scheduledMatch.overs} Overs
+                        </div>
+                        <div className="text-lg font-black text-white mt-1">
+                          {club.scheduledMatch.teamAName}{' '}
+                          <span className="text-amber-400 text-sm">vs</span>{' '}
+                          {club.scheduledMatch.teamBName}
+                        </div>
+                        <div className="text-xs text-slate-300 flex items-center gap-1.5 mt-1">
+                          <Clock className="w-3.5 h-3.5 text-amber-400" />
+                          {club.scheduledMatch.dateTime.replace('T', ' ')}
+                        </div>
+                      </div>
+
+                      {scheduledCountdown && (
+                        <div className="grid grid-cols-4 gap-2">
+                          {[
+                            { label: 'Days', val: scheduledCountdown.days },
+                            { label: 'Hrs', val: scheduledCountdown.hrs },
+                            { label: 'Min', val: scheduledCountdown.min },
+                            { label: 'Sec', val: scheduledCountdown.sec }
+                          ].map((b) => (
+                            <div key={b.label} className="rounded-xl bg-[#040a1d]/85 border border-white/10 py-2 text-center">
+                              <div className="text-lg font-black font-mono text-white">{b.val}</div>
+                              <div className="text-[10px] font-bold uppercase text-slate-400">{b.label}</div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <button
+                        onClick={() => {
+                          setMatchSubTab(club.liveMatch ? 'live' : 'upcoming');
+                          setActiveTab('matches');
+                        }}
+                        className={`w-full py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer ${theme.activePill}`}
+                      >
+                        Go to Match Center <ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                {/* Quick Actions 2x2 Grid */}
+                <div className={`lg:col-span-3 rounded-3xl border border-white/15 ${theme.cardBg} backdrop-blur-xl p-5 flex flex-col justify-between`}>
+                  <h3 className="font-bold text-sm sm:text-base flex items-center gap-2 text-white mb-3">
+                    <Zap className="w-4 h-4 text-amber-400" /> Quick Actions
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3 flex-1">
+                    <button
+                      onClick={() => requireAdminPin('Create New Match', openCreateMatchWizard)}
+                      className="rounded-2xl bg-white/5 hover:bg-amber-500/15 border border-white/10 hover:border-amber-400/40 p-3 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <div className="p-2.5 rounded-xl bg-amber-500/15 text-amber-300">
+                        <Plus className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-200 text-center">Create Match</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab('attendance')}
+                      className="rounded-2xl bg-white/5 hover:bg-emerald-500/15 border border-white/10 hover:border-emerald-400/40 p-3 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <div className="p-2.5 rounded-xl bg-emerald-500/15 text-emerald-300">
+                        <ClipboardCheck className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-200 text-center">Mark Attendance</span>
+                    </button>
+
+                    <button
+                      onClick={() => setActiveTab('finance')}
+                      className="rounded-2xl bg-white/5 hover:bg-purple-500/15 border border-white/10 hover:border-purple-400/40 p-3 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <div className="p-2.5 rounded-xl bg-purple-500/15 text-purple-300">
+                        <Receipt className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-200 text-center">Add Finance Entry</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setMatchSubTab('live');
+                        setActiveTab('matches');
+                      }}
+                      className="rounded-2xl bg-white/5 hover:bg-cyan-500/15 border border-white/10 hover:border-cyan-400/40 p-3 flex flex-col items-center justify-center gap-2 transition-all cursor-pointer"
+                    >
+                      <div className="p-2.5 rounded-xl bg-cyan-500/15 text-cyan-300">
+                        <Play className="w-5 h-5" />
+                      </div>
+                      <span className="text-xs font-bold text-slate-200 text-center">Open Live Scorer</span>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Team Performance Card */}
+                <div className={`lg:col-span-4 rounded-3xl border border-white/15 ${theme.cardBg} backdrop-blur-xl p-5 flex flex-col justify-between`}>
+                  <div className="flex items-center justify-between mb-2">
+                    <h3 className="font-bold text-sm sm:text-base flex items-center gap-2 text-white">
+                      <TrendingUp className="w-4 h-4 text-amber-400" /> Team Performance
+                    </h3>
+                    <button
+                      onClick={() => setActiveTab('leaderboard')}
+                      className="text-xs font-bold text-amber-300 hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                      Leaderboard <ChevronRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="flex items-center justify-center gap-4 my-2">
+                    <WinRateDonutSVG pct={winRatePct} primary={theme.chartPrimary} secondary={theme.chartSecondary} />
+                    <div className="space-y-1.5 text-xs">
+                      <div className="text-slate-400">
+                        Orange Cap:{' '}
+                        <strong className="text-amber-300">{orangeCap ? `${orangeCap.name.split(' ')[0]} (${orangeCap.runs})` : 'None yet'}</strong>
+                      </div>
+                      <div className="text-slate-400">
+                        Purple Cap:{' '}
+                        <strong className="text-purple-300">{purpleCap ? `${purpleCap.name.split(' ')[0]} (${purpleCap.wickets})` : 'None yet'}</strong>
+                      </div>
+                      <div className="text-slate-400">
+                        Poll IN: <strong className="text-emerald-300">{inCount}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-white/10 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-slate-400">Last 5 Matches</span>
+                    <div className="flex items-center gap-1.5">
+                      {lastFiveSlots.map((res, idx) => (
+                        <span
+                          key={idx}
+                          className={`w-7 h-7 rounded-full text-xs font-black flex items-center justify-center border ${
+                            res === 'W'
+                              ? 'bg-emerald-500/20 border-emerald-400/50 text-emerald-300'
+                              : res === 'L'
+                              ? 'bg-rose-500/20 border-rose-400/50 text-rose-300'
+                              : res === 'T'
+                              ? 'bg-amber-500/20 border-amber-400/50 text-amber-300'
+                              : 'bg-white/5 border-white/15 text-slate-500'
+                          }`}
+                        >
+                          {res}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
           )}
 
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>Recent Ledger</div>
-            <div style={{ display: "grid", gap: 8 }}>
-              {state.treasury.map((t) => (
-                <div
-                  key={t.id}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "10px 12px",
-                    borderRadius: 12,
-                    background: "rgba(2,6,23,0.7)",
-                  }}
-                >
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14 }}>{t.title}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {t.memberName} - {t.date} - {t.type}
+          {/* ============================================================== */}
+          {/* TAB 2: SQUAD TRADING CARDS                                     */}
+          {/* ============================================================== */}
+          {activeTab === 'squad' && (
+            <div className="space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-xl font-black text-white">
+                    {club.shortName} Squad ({club.players.length})
+                  </h2>
+                  <p className="text-xs text-slate-400">Tap any player card to inspect profile, career breakdown, or admin edits.</p>
+                </div>
+                <div className="relative sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                  <input
+                    value={squadSearch}
+                    onChange={(e) => setSquadSearch(e.target.value)}
+                    placeholder="Search player or role..."
+                    className="w-full pl-9 pr-3 py-2.5 rounded-xl bg-white/5 border border-white/15 text-sm text-white placeholder:text-slate-400 focus:outline-none focus:border-amber-400"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5">
+                {filteredSquad.map((p) => {
+                  const sr = p.ballsFaced > 0 ? ((p.runs / p.ballsFaced) * 100).toFixed(1) : '0.0';
+                  const econ = p.oversBowled > 0 ? (p.runsConceded / p.oversBowled).toFixed(2) : '0.00';
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => {
+                        setSelectedProfileId(p.id);
+                        setProfileSubTab('stats');
+                        setEditAwardDraft(p.funAward);
+                      }}
+                      className="group rounded-3xl border border-amber-400/25 bg-gradient-to-b from-[#0e2152]/90 via-[#091538]/95 to-[#050b1f] p-4 flex flex-col items-center text-center cursor-pointer transition-all hover:-translate-y-1 hover:border-amber-400 hover:shadow-[0_0_22px_rgba(251,191,36,0.25)]"
+                    >
+                      <div className="w-full flex items-center justify-between mb-1">
+                        <span className="text-xs font-black text-amber-300 font-mono">#{p.jersey}</span>
+                        {p.isAdmin && (
+                          <span className="px-2 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/40 text-amber-300 text-[9px] font-black">
+                            ADMIN
+                          </span>
+                        )}
+                      </div>
+
+                      <PlayerAvatarSVG name={p.name} jersey={p.jersey} role={p.role} size="md" />
+
+                      <h4 className="mt-2.5 font-extrabold text-sm text-white group-hover:text-amber-300 transition-colors line-clamp-1">
+                        {p.name}
+                      </h4>
+                      <p className="text-[11px] font-semibold text-cyan-300/90">{p.role}</p>
+
+                      <div className="w-full grid grid-cols-2 gap-1.5 mt-3 pt-2.5 border-t border-white/10 text-[11px]">
+                        <div className="bg-white/5 rounded-lg py-1">
+                          <span className="text-slate-400 block text-[9px]">RUNS (SR)</span>
+                          <span className="font-black text-white">
+                            {p.runs} <span className="text-[10px] text-cyan-300 font-normal">({sr})</span>
+                          </span>
+                        </div>
+                        <div className="bg-white/5 rounded-lg py-1">
+                          <span className="text-slate-400 block text-[9px]">WKTS (EC)</span>
+                          <span className="font-black text-amber-300">
+                            {p.wickets} <span className="text-[10px] text-slate-300 font-normal">({econ})</span>
+                          </span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <strong style={{ color: t.type === "EXPENSE" ? "var(--rose)" : "var(--emerald)" }}>
-                      {t.type === "EXPENSE" ? "-Rs." : "+Rs."}
-                      {t.amount}
-                    </strong>
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        className="il-btn"
-                        style={{ padding: "5px 7px" }}
-                        onClick={() =>
-                          requireAdminPin("Delete Ledger Entry", () =>
-                            setState((prev) => ({
-                              ...prev,
-                              treasury: prev.treasury.filter((x) => x.id !== t.id),
-                            }))
-                          )
-                        }
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* CHAT TAB */}
-      {tab === "chat" && (
-        <div className="il-card">
-          <div style={{ fontWeight: 800, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-            <MessageSquare size={16} color="#38bdf8" /> Indore Legends Locker-Room Chat
-          </div>
-          <div className="il-scroll-box">
-            {state.messages.map((m) => (
-              <div
-                key={m.id}
-                style={{
-                  alignSelf: m.sender === currentUser.name ? "flex-end" : "flex-start",
-                  maxWidth: "86%",
-                  background:
-                    m.sender === currentUser.name ? "rgba(37,99,235,0.28)" : "rgba(2,6,23,0.75)",
-                  border: "1px solid var(--border)",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                }}
-              >
-                <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11, marginBottom: 3 }}>
-                  <strong style={{ color: "var(--gold)" }}>{m.sender}</strong>
-                  <span style={{ color: "var(--muted)" }}>{m.timestamp}</span>
-                </div>
-                <div style={{ fontSize: 14 }}>{m.text}</div>
-              </div>
-            ))}
-            <div ref={chatEndRef} />
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!chatText.trim()) return;
-              setState((prev) => ({
-                ...prev,
-                messages: [
-                  ...prev.messages,
-                  { id: uid("m"), sender: currentUser.name, text: chatText.trim(), timestamp: nowTime() },
-                ],
-              }));
-              setChatText("");
-            }}
-            style={{ display: "flex", gap: 8, marginTop: 12 }}
-          >
-            <input
-              className="il-input"
-              placeholder={"Chat as " + currentUser.name + "..."}
-              value={chatText}
-              onChange={(e) => setChatText(e.target.value)}
-            />
-            <button type="submit" className="il-btn il-btn-primary">
-              <Send size={15} />
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* LEGENDBOT AI TAB */}
-      {tab === "ai" && (
-        <div className="il-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
-              <Bot size={18} color="#a78bfa" /> LegendBot Cricket AI
-            </div>
-            <span className="il-pill" style={{ background: "rgba(167,139,250,0.2)", color: "#ddd6fe" }}>
-              <Sparkles size={12} /> Club + IPL + Intl
-            </span>
-          </div>
-
-          <div className="il-scroll-box">
-            {aiMessages.map((msg) => (
-              <div
-                key={msg.id}
-                style={{
-                  alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                  maxWidth: "88%",
-                  background: msg.role === "user" ? "rgba(37,99,235,0.3)" : "rgba(2,6,23,0.8)",
-                  border: "1px solid var(--border)",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                }}
-              >
-                {msg.layer && (
-                  <div style={{ fontSize: 10, color: "var(--purple)", fontWeight: 800, marginBottom: 3 }}>
-                    {msg.layer}
-                  </div>
-                )}
-                <div style={{ fontSize: 14, lineHeight: 1.45 }}>{msg.text}</div>
-                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4, textAlign: "right" }}>
-                  {msg.timestamp}
-                </div>
-              </div>
-            ))}
-            {aiLoading && <div style={{ fontSize: 12, color: "var(--cyan)" }}>LegendBot is checking cricket intel...</div>}
-            <div ref={aiEndRef} />
-          </div>
-
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-            {["Orange and Purple Cap", "Club balance and dues", "Who is IN poll?", "IPL and Cricbuzz update"].map(
-              (chip) => (
-                <button
-                  key={chip}
-                  type="button"
-                  className="il-btn"
-                  style={{ padding: "5px 10px", fontSize: 11 }}
-                  onClick={() => void askLegendBot(chip)}
-                >
-                  {chip}
-                </button>
-              )
-            )}
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void askLegendBot(aiInput);
-            }}
-            style={{ display: "flex", gap: 8, marginTop: 10 }}
-          >
-            <button
-              type="button"
-              className={"il-btn " + (isListening ? "il-btn-danger" : "il-btn-purple")}
-              onClick={toggleVoiceInput}
-              title="Voice Input"
-            >
-              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-            </button>
-            <input
-              className="il-input"
-              placeholder={isListening ? "Listening... speak now" : "Ask LegendBot (Club, IPL, Cricbuzz, Intl)..."}
-              value={aiInput}
-              onChange={(e) => setAiInput(e.target.value)}
-            />
-            <button type="submit" disabled={aiLoading} className="il-btn il-btn-primary">
-              <Send size={15} />
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* SECRET GANESH MANDIR TAB */}
-      {tab === "gm" && gmUnlocked && (
-        <div>
-          <div
-            className="il-card"
-            style={{
-              background: "linear-gradient(135deg, rgba(234,88,12,0.35), rgba(180,83,9,0.28), rgba(15,23,42,0.95))",
-              borderColor: "rgba(251,146,60,0.65)",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-              <div>
-                <span className="il-pill" style={{ background: "rgba(251,146,60,0.25)", color: "#fed7aa" }}>
-                  SECRET G.M ZONE UNLOCKED
-                </span>
-                <h2 style={{ margin: "6px 0 2px 0", fontSize: 22 }}>Ganesh Mandir Hub</h2>
-                <div style={{ fontSize: 12, color: "#fed7aa" }}>
-                  Private space for the 8 G.M Squad Members
-                </div>
-              </div>
-              <a
-                href={state.gm.mapUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="il-btn il-btn-gold"
-                style={{ textDecoration: "none" }}
-              >
-                <MapPin size={15} /> Mandir Directions
-              </a>
-            </div>
-          </div>
-
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>Darshan Schedule and Prasad Coordination</div>
-            <div style={{ display: "grid", gap: 8, marginBottom: 12 }}>
-              {state.gm.visits.map((v) => (
-                <div
-                  key={v.id}
-                  style={{
-                    padding: 10,
-                    borderRadius: 12,
-                    background: "rgba(2,6,23,0.75)",
-                    border: "1px solid rgba(251,146,60,0.3)",
-                  }}
-                >
-                  <div style={{ fontWeight: 800, color: "#fdba74" }}>
-                    {v.date} - {v.time} - {v.plan}
-                  </div>
-                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
-                    Prasad Duty: {v.prasadDuty}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="il-grid-2">
-              <input
-                className="il-input"
-                type="date"
-                value={gmVisitDate}
-                onChange={(e) => setGmVisitDate(e.target.value)}
-              />
-              <input
-                className="il-input"
-                placeholder="Time (e.g., 7:00 AM)"
-                value={gmVisitTime}
-                onChange={(e) => setGmVisitTime(e.target.value)}
-              />
-              <input
-                className="il-input"
-                placeholder="Visit Plan"
-                value={gmVisitPlan}
-                onChange={(e) => setGmVisitPlan(e.target.value)}
-              />
-              <input
-                className="il-input"
-                placeholder="Prasad Duty Member(s)"
-                value={gmVisitPrasad}
-                onChange={(e) => setGmVisitPrasad(e.target.value)}
-              />
-            </div>
-            <button
-              type="button"
-              className="il-btn il-btn-gold"
-              style={{ marginTop: 8 }}
-              onClick={() => {
-                if (!gmVisitPlan.trim()) return;
-                setState((prev) => ({
-                  ...prev,
-                  gm: {
-                    ...prev.gm,
-                    visits: [
-                      {
-                        id: uid("gmv"),
-                        date: gmVisitDate,
-                        time: gmVisitTime,
-                        plan: gmVisitPlan.trim(),
-                        prasadDuty: gmVisitPrasad.trim() || currentUser.name,
-                      },
-                      ...prev.gm.visits,
-                    ],
-                  },
-                }));
-                setGmVisitPlan("");
-                setGmVisitPrasad("");
-              }}
-            >
-              <Plus size={15} /> Add Visit Plan
-            </button>
-          </div>
-
-          <div className="il-grid-2 il-resp-1" style={{ marginBottom: 12 }}>
-            <div className="il-card" style={{ marginBottom: 0 }}>
-              <div style={{ fontWeight: 800, marginBottom: 8 }}>Ganesh Mandir Visit Poll</div>
-              <div className="il-grid-3">
-                {(["IN", "MAYBE", "OUT"] as PollChoice[]).map((c) => (
-                  <button
-                    key={c}
-                    type="button"
-                    className="il-btn"
-                    style={{ fontSize: 12 }}
-                    onClick={() =>
-                      setState((prev) => ({
-                        ...prev,
-                        gm: {
-                          ...prev.gm,
-                          poll: [
-                            ...prev.gm.poll.filter((x) => x.playerId !== currentUser.id),
-                            { playerId: currentUser.id, playerName: currentUser.name, choice: c },
-                          ],
-                        },
-                      }))
-                    }
-                  >
-                    {c}
-                  </button>
-                ))}
-              </div>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 5, marginTop: 8 }}>
-                {state.gm.poll.map((v) => (
-                  <span key={v.playerId} className="il-pill" style={{ background: "#1e293b", color: "#fed7aa" }}>
-                    {v.playerName.split(" ")[0]}: {v.choice}
-                  </span>
-                ))}
+                  );
+                })}
               </div>
             </div>
+          )}
 
-            <div className="il-card" style={{ marginBottom: 0 }}>
-              <div style={{ fontWeight: 800, marginBottom: 8 }}>G.M Digital Coin Toss</div>
-              <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
-                Use for prasad turns, seva duty, or friendly decisions!
-              </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <button
-                  type="button"
-                  className="il-btn il-btn-gold"
-                  disabled={coinFlipping}
-                  onClick={() => flipCoin("gm")}
-                >
-                  <Coins size={15} className={coinFlipping ? "il-coin-spin" : ""} /> Flip Coin
-                </button>
-                {gmCoinResult && (
-                  <strong style={{ color: "var(--gold)", fontSize: 18 }}>{gmCoinResult}</strong>
-                )}
-              </div>
-            </div>
-          </div>
-
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>Ganesh Mandir Prasad Fund</div>
-            <DonutPieChart
-              centerLabel={"Rs." + (gmCollected - gmSpent)}
-              slices={[
-                { label: "Collected", value: gmCollected, color: "#fb923c" },
-                { label: "Spent", value: gmSpent, color: "#fb7185" },
-              ]}
-            />
-            <div className="il-grid-4 il-resp-2" style={{ marginTop: 12 }}>
-              <input
-                className="il-input"
-                placeholder="Item / Donation"
-                value={gmTrTitle}
-                onChange={(e) => setGmTrTitle(e.target.value)}
-              />
-              <select
-                className="il-select"
-                value={gmTrType}
-                onChange={(e) => setGmTrType(e.target.value as LedgerType)}
-              >
-                <option value="CREDIT">Collected (+)</option>
-                <option value="EXPENSE">Spent (-)</option>
-              </select>
-              <input
-                className="il-input"
-                type="number"
-                placeholder="Rs. Amount"
-                value={gmTrAmount}
-                onChange={(e) => setGmTrAmount(e.target.value)}
-              />
-              <button
-                type="button"
-                className="il-btn il-btn-gold"
-                onClick={() => {
-                  const amt = Number(gmTrAmount);
-                  if (!gmTrTitle.trim() || !amt) return;
-                  setState((prev) => ({
-                    ...prev,
-                    gm: {
-                      ...prev.gm,
-                      treasury: [
-                        {
-                          id: uid("gmt"),
-                          title: gmTrTitle.trim(),
-                          type: gmTrType,
-                          amount: amt,
-                          memberName: currentUser.name,
-                          date: new Date().toISOString().slice(0, 10),
-                        },
-                        ...prev.gm.treasury,
-                      ],
-                    },
-                  }));
-                  setGmTrTitle("");
-                  setGmTrAmount("");
-                }}
-              >
-                Add
-              </button>
-            </div>
-          </div>
-
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>Private Ganesh Mandir Chat</div>
-            <div className="il-scroll-box">
-              {state.gm.messages.map((m) => (
-                <div
-                  key={m.id}
-                  style={{
-                    background: "rgba(2,6,23,0.75)",
-                    border: "1px solid rgba(251,146,60,0.3)",
-                    padding: "9px 12px",
-                    borderRadius: 12,
-                  }}
-                >
-                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 11 }}>
-                    <strong style={{ color: "#fdba74" }}>{m.sender}</strong>
-                    <span style={{ color: "var(--muted)" }}>{m.timestamp}</span>
-                  </div>
-                  <div style={{ fontSize: 14, marginTop: 3 }}>{m.text}</div>
-                </div>
-              ))}
-            </div>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                if (!gmChatText.trim()) return;
-                setState((prev) => ({
-                  ...prev,
-                  gm: {
-                    ...prev.gm,
-                    messages: [
-                      ...prev.gm.messages,
-                      { id: uid("gmm"), sender: currentUser.name, text: gmChatText.trim(), timestamp: nowTime() },
-                    ],
-                  },
-                }));
-                setGmChatText("");
-              }}
-              style={{ display: "flex", gap: 8, marginTop: 10 }}
-            >
-              <input
-                className="il-input"
-                placeholder="Message G.M group..."
-                value={gmChatText}
-                onChange={(e) => setGmChatText(e.target.value)}
-              />
-              <button type="submit" className="il-btn il-btn-gold">
-                <Send size={15} />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* MODALS */}
-      {showDuePopup && currentUser.finesDue > 0 && (
-        <div className="il-modal-backdrop">
-          <div className="il-modal">
-            <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--rose)", fontWeight: 900, fontSize: 17 }}>
-              <AlertTriangle size={20} /> Pending Club Due Reminder
-            </div>
-            <p style={{ fontSize: 14, color: "#e2e8f0", lineHeight: 1.5 }}>
-              Hi <strong>{currentUser.name}</strong>, you currently have a pending fine/due of{" "}
-              <strong style={{ color: "var(--gold)" }}>Rs.{currentUser.finesDue}</strong> in the Indore Legends Treasury.
-              Please clear it before the next match!
-            </p>
-            <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
-              <button type="button" className="il-btn il-btn-gold" onClick={() => setShowDuePopup(false)}>
-                Got It
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {milestonePopup && (
-        <div className="il-modal-backdrop">
-          <div className="il-modal" style={{ textAlign: "center" }}>
-            <h2 style={{ margin: 0, color: "var(--gold)" }}>MILESTONE UNLOCKED!</h2>
-            <p style={{ fontSize: 16, fontWeight: 700, margin: "12px 0 18px 0" }}>{milestonePopup}</p>
-            <button type="button" className="il-btn il-btn-gold" onClick={() => setMilestonePopup("")}>
-              Awesome!
-            </button>
-          </div>
-        </div>
-      )}
-
-      {pinModalTitle && (
-        <div className="il-modal-backdrop">
-          <div className="il-modal">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ fontWeight: 900, color: "var(--gold)", display: "inline-flex", alignItems: "center", gap: 6 }}>
-                <Lock size={16} /> Admin PIN Required
-              </span>
-              <button
-                type="button"
-                className="il-btn"
-                style={{ padding: 6 }}
-                onClick={() => {
-                  setPinModalTitle("");
-                  pendingAdminActionRef.current = null;
-                }}
-              >
-                <X size={15} />
-              </button>
-            </div>
-            <div style={{ fontSize: 13, color: "var(--muted)", marginBottom: 12 }}>{pinModalTitle}</div>
-            <form onSubmit={submitAdminPin} style={{ display: "grid", gap: 10 }}>
-              <input
-                type="password"
-                className="il-input"
-                placeholder="Enter 6-digit Admin PIN"
-                value={pinInput}
-                onChange={(e) => {
-                  setPinInput(e.target.value);
-                  setPinError("");
-                }}
-                autoFocus
-              />
-              {pinError && <div style={{ fontSize: 12, color: "var(--rose)" }}>{pinError}</div>}
-              <button type="submit" className="il-btn il-btn-gold">
-                Verify PIN and Continue
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {showGmLoginModal && (
-        <div className="il-modal-backdrop">
-          <div className="il-modal" style={{ borderColor: "rgba(251,146,60,0.65)" }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <span style={{ fontWeight: 900, color: "#fdba74" }}>Ganesh Mandir Private Login</span>
-              <button type="button" className="il-btn" style={{ padding: 6 }} onClick={() => setShowGmLoginModal(false)}>
-                <X size={15} />
-              </button>
-            </div>
-            <form onSubmit={handleGmUnlock} style={{ display: "grid", gap: 10 }}>
-              <select
-                className="il-select"
-                value={gmLoginId}
-                onChange={(e) => setGmLoginId(e.target.value)}
-              >
-                {state.players
-                  .filter((p) => p.isGM)
-                  .map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-              </select>
-              <input
-                type="password"
-                className="il-input"
-                placeholder="Enter your same squad password"
-                value={gmLoginPass}
-                onChange={(e) => {
-                  setGmLoginPass(e.target.value);
-                  setGmLoginErr("");
-                }}
-              />
-              {gmLoginErr && <div style={{ fontSize: 12, color: "var(--rose)" }}>{gmLoginErr}</div>}
-              <button type="submit" className="il-btn il-btn-gold">
-                Unlock Ganesh Mandir Zone
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Bottom Navigation */}
-      <nav className="il-nav">
-        <div className="il-nav-inner">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={"il-nav-item " + (tab === item.id ? "active" : "")}
-              onClick={() => setTab(item.id)}
-            >
-              {item.icon}
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </div>
-      </nav>
-    </div>
-  );
-}
+          {/* ==========================================
