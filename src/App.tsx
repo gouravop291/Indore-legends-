@@ -37,6 +37,12 @@ import {
   Eye,
   EyeOff,
   BarChart3,
+  UserPlus,
+  Edit3,
+  Star,
+  CreditCard,
+  Copy,
+  Check,
 } from "lucide-react";
 
 type TabKey = "home" | "match" | "squad" | "leaderboard" | "treasury" | "chat" | "ai" | "settings";
@@ -70,6 +76,7 @@ interface SpeechRecognitionLike {
 interface Player {
   id: string;
   name: string;
+  jerseyNo: number;
   role: PlayerRole;
   isAdmin: boolean;
   isGM: boolean;
@@ -83,6 +90,7 @@ interface Player {
   wickets: number;
   oversBowled: number;
   runsConceded: number;
+  mvpPoints: number;
   finesDue: number;
   advanceCredit: number;
   funAward: string;
@@ -187,6 +195,7 @@ interface CompletedMatch {
   date: string;
   summary: string;
   winner: string;
+  wonFlag: "W" | "L" | "T";
   mvp: string;
   scorecardText: string;
 }
@@ -243,7 +252,6 @@ interface AppState {
 
 interface AuthSession {
   playerId: string;
-  isAdminSession: boolean;
 }
 
 interface PieSlice {
@@ -252,15 +260,57 @@ interface PieSlice {
   color: string;
 }
 
-const STORAGE_KEY = "indore_legends_zero_v5";
+const STORAGE_KEY = "indore_legends_pro_v6";
 const ADMIN_PIN = "450718";
 const DEFAULT_LAUNCH_TIME = "2026-11-29T15:00:00+05:30";
+
+const CODE39_MAP: Record<string, string> = {
+  "0": "nnnwwnwnn",
+  "1": "wnnwnnnnw",
+  "2": "nnwwnnnnw",
+  "3": "wnwwnnnnn",
+  "4": "nnnwwnnnw",
+  "5": "wnnwwnnnn",
+  "6": "nnwwwnnnn",
+  "7": "nnnwnnwnw",
+  "8": "wnnwnnwnn",
+  "9": "nnwwnnwnn",
+  A: "wnnnnwnnw",
+  B: "nnwnnwnnw",
+  C: "wnwnnwnnn",
+  D: "nnnnwwnnw",
+  E: "wnnnwwnnn",
+  F: "nnwnwwnnn",
+  G: "nnnnnwwnw",
+  H: "wnnnnwwnn",
+  I: "nnwnnwwnn",
+  J: "nnnnwwwnn",
+  K: "wnnnnnnww",
+  L: "nnwnnnnww",
+  M: "wnwnnnnwn",
+  N: "nnnnwnnww",
+  O: "wnnnwnnwn",
+  P: "nnwnwnnwn",
+  Q: "nnnnnnwww",
+  R: "wnnnnnwwn",
+  S: "nnwnnnwwn",
+  T: "nnnnwnwwn",
+  U: "wwnnnnnnw",
+  V: "nwwnnnnnw",
+  W: "wwwnnnnnn",
+  X: "nwnnwnnnw",
+  Y: "wwnnwnnnn",
+  Z: "nwwnwnnnn",
+  "-": "nwnnnnwnw",
+  "*": "nwnnwnwnn",
+};
 
 function makeZeroRoster(): Player[] {
   return [
     {
       id: "p1",
       name: "Gaurav Lalwani",
+      jerseyNo: 45,
       role: "All-Rounder",
       isAdmin: true,
       isGM: true,
@@ -274,6 +324,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -281,6 +332,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p2",
       name: "Granth Sharma",
+      jerseyNo: 7,
       role: "All-Rounder",
       isAdmin: true,
       isGM: true,
@@ -294,6 +346,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -301,6 +354,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p3",
       name: "Adhyan Upadhyay",
+      jerseyNo: 1,
       role: "Batsman",
       isAdmin: false,
       isGM: false,
@@ -313,6 +367,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -320,6 +375,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p4",
       name: "Virat Chaudary",
+      jerseyNo: 18,
       role: "Batsman",
       isAdmin: false,
       isGM: true,
@@ -332,6 +388,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -339,6 +396,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p5",
       name: "Agam Khandelwal",
+      jerseyNo: 3,
       role: "Bowler",
       isAdmin: false,
       isGM: false,
@@ -351,6 +409,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -358,6 +417,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p6",
       name: "Aditya Rathore",
+      jerseyNo: 4,
       role: "All-Rounder",
       isAdmin: false,
       isGM: true,
@@ -370,6 +430,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -377,6 +438,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p7",
       name: "Anuj Mishra",
+      jerseyNo: 5,
       role: "Bowler",
       isAdmin: false,
       isGM: false,
@@ -389,6 +451,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -396,6 +459,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p8",
       name: "Aadarsh Mishra",
+      jerseyNo: 6,
       role: "Batsman",
       isAdmin: false,
       isGM: false,
@@ -408,6 +472,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -415,6 +480,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p9",
       name: "Atharv Solanki",
+      jerseyNo: 17,
       role: "Wicket-Keeper",
       isAdmin: false,
       isGM: true,
@@ -427,6 +493,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -434,6 +501,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p10",
       name: "Ashwin Gagrani",
+      jerseyNo: 8,
       role: "All-Rounder",
       isAdmin: false,
       isGM: true,
@@ -446,6 +514,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -453,6 +522,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p11",
       name: "Rudraksh Soni",
+      jerseyNo: 9,
       role: "Bowler",
       isAdmin: false,
       isGM: false,
@@ -465,6 +535,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -472,6 +543,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p12",
       name: "Naitik Arya",
+      jerseyNo: 10,
       role: "Batsman",
       isAdmin: false,
       isGM: true,
@@ -484,6 +556,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -491,6 +564,7 @@ function makeZeroRoster(): Player[] {
     {
       id: "p13",
       name: "Harshit Nagpal",
+      jerseyNo: 11,
       role: "All-Rounder",
       isAdmin: false,
       isGM: true,
@@ -503,6 +577,7 @@ function makeZeroRoster(): Player[] {
       wickets: 0,
       oversBowled: 0,
       runsConceded: 0,
+      mvpPoints: 0,
       finesDue: 0,
       advanceCredit: 0,
       funAward: "Squad Member",
@@ -520,7 +595,7 @@ function createFreshState(): AppState {
       il: {
         clubName: "INDORE LEGENDS",
         players: ilPlayers,
-        announcement: "INDORE LEGENDS SEASON LAUNCH: Nov 29, 2026 at 3:00 PM IST. Fresh season starts at zero!",
+        announcement: "INDORE LEGENDS SEASON LAUNCH: Nov 29, 2026 at 3:00 PM IST. Together We Rise!",
         groundName: "Indore Legends Home Ground, Indore",
         groundMapUrl: "https://www.google.com/maps/search/?api=1&query=Indore+Cricket+Ground+Madhya+Pradesh",
         scheduledMatch: null,
@@ -533,7 +608,7 @@ function createFreshState(): AppState {
       gm: {
         clubName: "GANESH MANDIR CRICKET",
         players: gmPlayers,
-        announcement: "GANESH MANDIR CRICKET SQUAD: 8-player private club workspace. Fresh season starts at zero!",
+        announcement: "GANESH MANDIR CRICKET SQUAD: 8-player private club workspace. Play Bold!",
         groundName: "Ganesh Mandir Ground, Indore",
         groundMapUrl: "https://www.google.com/maps/search/?api=1&query=Ganesh+Mandir+Indore+Madhya+Pradesh",
         scheduledMatch: null,
@@ -581,12 +656,19 @@ function formatOvers(legalBalls: number): string {
   return Math.floor(legalBalls / 6) + "." + (legalBalls % 6);
 }
 
-function playerRankScore(p: Player): number {
-  return p.runs + p.wickets * 22 + p.sixes * 4;
+function playerMvpScore(p: Player): number {
+  return p.mvpPoints;
 }
 
 function playerPhotoPath(playerId: string): string {
   return "/players/" + playerId + ".jpg";
+}
+
+function playerClubIdCode(wsKey: WorkspaceKey, p: Player): string {
+  const prefix = wsKey === "gm" ? "GM" : "IL";
+  const shortId = p.id.toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 4);
+  const jersey = String(p.jerseyNo).padStart(2, "0");
+  return prefix + "-" + shortId + "-" + jersey;
 }
 
 function playerInitials(name: string): string {
@@ -607,40 +689,54 @@ function verifyPlayerPassword(
   player: Player,
   inputRaw: string,
   customPasswords: Record<string, string>
-): { ok: boolean; asAdmin: boolean } {
+): boolean {
   const input = inputRaw.trim();
-  if (!input) return { ok: false, asAdmin: false };
+  if (!input) return false;
 
   if (player.isAdmin && player.adminPass) {
     const normalizedInput = input.replace(/^0/, "O").toUpperCase();
     const normalizedAdmin = player.adminPass.replace(/^0/, "O").toUpperCase();
     if (input === player.adminPass || normalizedInput === normalizedAdmin) {
-      return { ok: true, asAdmin: true };
+      return true;
     }
   }
 
   const activeNormal = customPasswords[player.id] || player.defaultPass;
   if (input === activeNormal) {
-    return { ok: true, asAdmin: false };
+    return true;
   }
 
   if (!customPasswords[player.id]) {
     if (player.id === "p11" && input === "Rudu09") {
-      return { ok: true, asAdmin: false };
+      return true;
     }
     if (input.replace(/\s+/g, "") === player.defaultPass) {
-      return { ok: true, asAdmin: false };
+      return true;
     }
   }
 
-  return { ok: false, asAdmin: false };
+  return false;
 }
 
-function splitTeamsByRanking(selected: Player[]): { teamA: Player[]; teamB: Player[] } {
-  const ranked = [...selected].sort((a, b) => playerRankScore(b) - playerRankScore(a));
+function splitTeamsFairly(selected: Player[], randomize: boolean): { teamA: Player[]; teamB: Player[] } {
+  const list = [...selected];
+  if (randomize) {
+    for (let i = list.length - 1; i > 0; i -= 1) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = list[i];
+      list[i] = list[j];
+      list[j] = tmp;
+    }
+  } else {
+    list.sort((a, b) => {
+      const diff = playerMvpScore(b) - playerMvpScore(a);
+      if (diff !== 0) return diff;
+      return Math.random() - 0.5;
+    });
+  }
   const teamA: Player[] = [];
   const teamB: Player[] = [];
-  ranked.forEach((pl, idx) => {
+  list.forEach((pl, idx) => {
     const cycle = idx % 4;
     if (cycle === 0 || cycle === 3) {
       teamA.push(pl);
@@ -655,8 +751,8 @@ function autoPickCaptains(team: Player[]): { captain: string; viceCaptain: strin
   if (team.length === 0) return { captain: "TBD", viceCaptain: "TBD" };
   if (team.length === 1) return { captain: team[0].name, viceCaptain: team[0].name };
   const shuffled = [...team].sort((a, b) => {
-    const scoreA = playerRankScore(a) + Math.random() * 100;
-    const scoreB = playerRankScore(b) + Math.random() * 100;
+    const scoreA = playerMvpScore(a) + Math.random() * 60;
+    const scoreB = playerMvpScore(b) + Math.random() * 60;
     return scoreB - scoreA;
   });
   return { captain: shuffled[0].name, viceCaptain: shuffled[1].name };
@@ -667,56 +763,124 @@ function buildThemeCss(theme: ThemeKey): string {
     theme === "gold" ? "#fbbf24" : theme === "emerald" ? "#34d399" : "#38bdf8";
   const glow =
     theme === "gold"
-      ? "rgba(251, 191, 36, 0.28)"
+      ? "rgba(251, 191, 36, 0.34)"
       : theme === "emerald"
-      ? "rgba(52, 211, 153, 0.26)"
-      : "rgba(56, 189, 248, 0.26)";
+      ? "rgba(52, 211, 153, 0.32)"
+      : "rgba(56, 189, 248, 0.32)";
   const bgTop =
-    theme === "gold" ? "#271b07" : theme === "emerald" ? "#07261f" : "#0e1d44";
+    theme === "gold" ? "#261a06" : theme === "emerald" ? "#06251d" : "#0b1a42";
 
   return [
-    ":root { --bg: #040816; --panel: rgba(11, 19, 40, 0.92); --border: rgba(148, 163, 184, 0.22); --accent: " + accent + "; --accent-glow: " + glow + "; --gold: #fbbf24; --cyan: #38bdf8; --emerald: #34d399; --rose: #fb7185; --purple: #a78bfa; --text: #f8fafc; --muted: #94a3b8; }",
+    ":root { --bg: #030714; --panel: rgba(10, 18, 40, 0.9); --border: rgba(148, 163, 184, 0.22); --accent: " + accent + "; --accent-glow: " + glow + "; --gold: #fbbf24; --cyan: #38bdf8; --emerald: #34d399; --rose: #fb7185; --purple: #a78bfa; --text: #f8fafc; --muted: #94a3b8; }",
     "* { box-sizing: border-box; }",
-    "html, body, #root { margin: 0; padding: 0; min-height: 100vh; background: radial-gradient(circle at top, " + bgTop + " 0%, #040816 68%); color: var(--text); font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; }",
+    "html, body, #root { margin: 0; padding: 0; min-height: 100vh; background: radial-gradient(ellipse at top, " + bgTop + " 0%, #030714 70%); color: var(--text); font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, Roboto, sans-serif; }",
     "@keyframes freeHitFlash { 0%, 100% { background: rgba(245, 158, 11, 0.96); color: #090d1e; box-shadow: 0 0 26px rgba(251, 191, 36, 0.9); } 50% { background: rgba(225, 29, 72, 0.96); color: #ffffff; box-shadow: 0 0 26px rgba(244, 63, 94, 0.9); } }",
-    "@keyframes coinSpin { 0% { transform: rotateY(0deg) scale(1); } 50% { transform: rotateY(360deg) scale(1.15); } 100% { transform: rotateY(720deg) scale(1); } }",
+    "@keyframes coinSpin { 0% { transform: rotateY(0deg) scale(1); } 50% { transform: rotateY(360deg) scale(1.16); } 100% { transform: rotateY(720deg) scale(1); } }",
     ".il-freehit-banner { animation: freeHitFlash 0.75s infinite; padding: 10px 14px; border-radius: 12px; text-align: center; font-weight: 900; letter-spacing: 0.14em; font-size: 13px; margin-bottom: 12px; text-transform: uppercase; }",
     ".il-coin-spin { animation: coinSpin 0.75s ease-in-out; }",
-    ".il-shell { max-width: 980px; margin: 0 auto; padding: 12px 12px 96px 12px; }",
-    ".il-gold-bar { background: linear-gradient(90deg, #92400e, #d97706, #fbbf24, #d97706, #92400e); color: #090d1e; padding: 9px 14px; border-radius: 14px; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; box-shadow: 0 8px 24px rgba(245, 158, 11, 0.28); }",
+    ".il-app-layout { display: flex; min-height: 100vh; max-width: 1240px; margin: 0 auto; }",
+    ".il-sidebar { width: 220px; flex-shrink: 0; background: rgba(6, 12, 29, 0.94); border-right: 1px solid var(--accent-glow); padding: 16px 12px; display: flex; flex-direction: column; justify-content: space-between; position: sticky; top: 0; height: 100vh; }",
+    ".il-main { flex: 1; min-width: 0; padding: 12px 14px 96px 14px; }",
+    "@media (max-width: 860px) { .il-sidebar { display: none; } .il-main { padding: 10px 10px 92px 10px; } }",
+    "@media (min-width: 861px) { .il-mobile-nav { display: none !important; } .il-main { padding-bottom: 24px; } }",
+    ".il-side-btn { width: 100%; display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; border: 1px solid transparent; background: transparent; color: var(--muted); font-weight: 700; font-size: 13px; cursor: pointer; text-align: left; }",
+    ".il-side-btn.active { background: linear-gradient(90deg, rgba(245, 158, 11, 0.92), rgba(217, 119, 6, 0.2)); color: #050a18; border-color: rgba(251, 191, 36, 0.65); font-weight: 900; }",
+    ".il-gold-bar { background: linear-gradient(90deg, #92400e, #d97706, #fbbf24, #d97706, #92400e); color: #090d1e; padding: 8px 14px; border-radius: 14px; font-weight: 800; font-size: 12px; display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; box-shadow: 0 8px 24px rgba(245, 158, 11, 0.28); }",
     ".il-header { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--accent-glow); border-radius: 18px; margin-bottom: 12px; backdrop-filter: blur(14px); box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35); }",
-    ".il-crest { width: 46px; height: 46px; border-radius: 14px; background: linear-gradient(135deg, #fbbf24, #d97706, #b45309); display: flex; align-items: center; justify-content: center; color: #050a18; font-weight: 900; font-size: 18px; letter-spacing: 0.04em; cursor: pointer; user-select: none; box-shadow: 0 0 20px rgba(251, 191, 36, 0.45); flex-shrink: 0; border: 2px solid rgba(254, 243, 199, 0.65); }",
-    ".il-card { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 16px; margin-bottom: 12px; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38); }",
-    ".il-hero-card { background: linear-gradient(135deg, rgba(29, 78, 216, 0.28), rgba(11, 19, 40, 0.96), rgba(217, 119, 6, 0.24)); border: 1px solid rgba(251, 191, 36, 0.45); }",
-    ".il-fut-card { background: linear-gradient(160deg, rgba(15, 29, 68, 0.96) 0%, rgba(6, 12, 29, 0.98) 100%); border: 1px solid rgba(251, 191, 36, 0.4); border-radius: 18px; overflow: hidden; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.45); display: flex; flex-direction: column; }",
-    ".il-fut-photo-wrap { position: relative; width: 100%; height: 185px; background: radial-gradient(circle at top, #1d4ed8 0%, #09132c 70%); overflow: hidden; cursor: pointer; }",
-    ".il-fut-fade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(6, 12, 29, 0.98) 6%, rgba(6, 12, 29, 0.3) 50%, rgba(6, 12, 29, 0.08) 100%); pointer-events: none; }",
+    ".il-crest { width: 46px; height: 46px; border-radius: 14px; background: linear-gradient(135deg, #fde68a, #f59e0b, #b45309); display: flex; align-items: center; justify-content: center; color: #050a18; font-weight: 900; font-size: 18px; letter-spacing: 0.04em; cursor: pointer; user-select: none; box-shadow: 0 0 22px rgba(251, 191, 36, 0.5); flex-shrink: 0; border: 2px solid rgba(254, 243, 199, 0.75); }",
+    ".il-card { background: var(--panel); border: 1px solid var(--border); border-radius: 18px; padding: 15px; margin-bottom: 12px; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.38); }",
+    ".il-hero-banner { background: linear-gradient(135deg, rgba(29, 78, 216, 0.36), rgba(9, 17, 38, 0.96) 55%, rgba(217, 119, 6, 0.3)); border: 1px solid rgba(251, 191, 36, 0.5); position: relative; overflow: hidden; }",
+    ".il-kpi { background: linear-gradient(145deg, rgba(15, 29, 66, 0.95), rgba(6, 12, 29, 0.96)); border: 1px solid var(--accent-glow); border-radius: 16px; padding: 13px; box-shadow: 0 8px 22px rgba(0,0,0,0.35); }",
+    ".il-fut-card { background: linear-gradient(160deg, rgba(15, 31, 74, 0.98) 0%, rgba(5, 11, 27, 0.98) 100%); border: 1px solid rgba(251, 191, 36, 0.45); border-radius: 18px; overflow: hidden; box-shadow: 0 14px 34px rgba(0, 0, 0, 0.48); display: flex; flex-direction: column; }",
+    ".il-fut-photo-wrap { position: relative; width: 100%; height: 190px; background: radial-gradient(circle at top, #1d4ed8 0%, #09132c 72%); overflow: hidden; cursor: pointer; }",
+    ".il-fut-fade { position: absolute; inset: 0; background: linear-gradient(to top, rgba(5, 11, 27, 0.98) 8%, rgba(5, 11, 27, 0.35) 52%, rgba(5, 11, 27, 0.08) 100%); pointer-events: none; }",
+    ".il-id-pass { background: linear-gradient(165deg, #102454 0%, #071026 55%, #1c1506 100%); border: 2px solid rgba(251, 191, 36, 0.72); border-radius: 22px; padding: 16px; box-shadow: 0 18px 46px rgba(0, 0, 0, 0.65), 0 0 28px rgba(251, 191, 36, 0.16); position: relative; overflow: hidden; }",
     ".il-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }",
-    ".il-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }",
-    ".il-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }",
+    ".il-grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }",
+    ".il-grid-4 { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 9px; }",
     "@media (max-width: 640px) { .il-resp-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); } .il-resp-1 { grid-template-columns: 1fr; } }",
-    ".il-btn { border: 1px solid var(--border); background: rgba(30, 41, 59, 0.85); color: #f8fafc; border-radius: 12px; padding: 10px 13px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: transform 0.08s ease, opacity 0.15s ease; }",
+    ".il-btn { border: 1px solid var(--border); background: rgba(24, 36, 66, 0.9); color: #f8fafc; border-radius: 12px; padding: 10px 13px; font-weight: 700; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: transform 0.08s ease, opacity 0.15s ease; }",
     ".il-btn:active { transform: scale(0.97); }",
     ".il-btn:disabled { opacity: 0.42; cursor: not-allowed; }",
-    ".il-btn-primary { background: linear-gradient(135deg, #0284c7, #2563eb); border-color: rgba(56, 189, 248, 0.55); }",
-    ".il-btn-gold { background: linear-gradient(135deg, #d97706, #fbbf24); color: #080d1d; border-color: rgba(254, 243, 199, 0.6); }",
+    ".il-btn-primary { background: linear-gradient(135deg, #0284c7, #2563eb); border-color: rgba(56, 189, 248, 0.6); }",
+    ".il-btn-gold { background: linear-gradient(135deg, #d97706, #fbbf24); color: #060b19; border-color: rgba(254, 243, 199, 0.65); font-weight: 800; }",
     ".il-btn-emerald { background: rgba(16, 185, 129, 0.22); border-color: rgba(52, 211, 153, 0.55); color: #6ee7b7; }",
     ".il-btn-danger { background: linear-gradient(135deg, #be123c, #e11d48); border-color: rgba(251, 113, 133, 0.6); color: #ffffff; }",
     ".il-btn-purple { background: rgba(139, 92, 246, 0.24); border-color: rgba(167, 139, 250, 0.55); color: #ddd6fe; }",
-    ".il-input, .il-select { width: 100%; padding: 11px 13px; border-radius: 12px; border: 1px solid rgba(148, 163, 184, 0.28); background: rgba(2, 6, 23, 0.86); color: #f8fafc; font-size: 14px; outline: none; }",
+    ".il-input, .il-select { width: 100%; padding: 10px 12px; border-radius: 11px; border: 1px solid rgba(148, 163, 184, 0.3); background: rgba(2, 6, 23, 0.88); color: #f8fafc; font-size: 14px; outline: none; }",
     ".il-input:focus, .il-select:focus { border-color: var(--accent); }",
-    ".il-pill { display: inline-flex; align-items: center; gap: 5px; padding: 4px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }",
+    ".il-pill { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; }",
     ".il-ball { width: 34px; height: 34px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; font-weight: 900; font-size: 12px; border: 1px solid var(--border); flex-shrink: 0; }",
-    ".il-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: rgba(2, 6, 23, 0.96); border-top: 1px solid var(--accent-glow); backdrop-filter: blur(14px); display: flex; justify-content: center; padding: 7px 4px; }",
+    ".il-mobile-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 40; background: rgba(2, 6, 23, 0.96); border-top: 1px solid var(--accent-glow); backdrop-filter: blur(14px); display: flex; justify-content: center; padding: 7px 4px; }",
     ".il-nav-inner { width: 100%; max-width: 980px; display: flex; justify-content: space-around; gap: 2px; overflow-x: auto; }",
-    ".il-nav-item { flex: 1; min-width: 48px; background: transparent; border: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 10px; font-size: 10px; font-weight: 700; cursor: pointer; }",
+    ".il-nav-item { flex: 1; min-width: 46px; background: transparent; border: none; color: var(--muted); display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 6px 2px; border-radius: 10px; font-size: 10px; font-weight: 700; cursor: pointer; }",
     ".il-nav-item.active { color: var(--gold); background: rgba(251, 191, 36, 0.14); }",
-    ".il-modal-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(2, 6, 23, 0.86); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 16px; }",
-    ".il-modal { width: 100%; max-width: 440px; background: #0a1228; border: 1px solid rgba(251, 191, 36, 0.45); border-radius: 20px; padding: 20px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.72); overflow: hidden; }",
-    ".il-scroll-box { max-height: 320px; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; padding-right: 4px; }",
-    ".il-orb { width: 28px; height: 28px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.12s ease; }",
-    ".il-orb.selected { border-color: #ffffff; transform: scale(1.12); }",
+    ".il-modal-backdrop { position: fixed; inset: 0; z-index: 80; background: rgba(2, 6, 23, 0.86); backdrop-filter: blur(6px); display: flex; align-items: center; justify-content: center; padding: 14px; overflow-y: auto; }",
+    ".il-modal { width: 100%; max-width: 460px; max-height: 92vh; overflow-y: auto; background: #091228; border: 1px solid rgba(251, 191, 36, 0.5); border-radius: 20px; padding: 18px; box-shadow: 0 24px 60px rgba(0, 0, 0, 0.75); }",
+    ".il-scroll-box { max-height: 310px; overflow-y: auto; display: flex; flex-direction: column; gap: 9px; padding-right: 4px; }",
+    ".il-orb { width: 26px; height: 26px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: transform 0.12s ease; }",
+    ".il-orb.selected { border-color: #ffffff; transform: scale(1.14); }",
   ].join("\n");
+}
+
+function Code39Barcode({ value }: { value: string }) {
+  const clean = value.toUpperCase().replace(/[^A-Z0-9-]/g, "");
+  const encoded = "*" + clean + "*";
+  const narrow = 2;
+  const wide = 5;
+  const gap = 2;
+  const rects: { x: number; w: number }[] = [];
+  let cursor = 12;
+
+  for (let i = 0; i < encoded.length; i += 1) {
+    const ch = encoded[i];
+    const pattern = CODE39_MAP[ch] || CODE39_MAP["-"];
+    for (let j = 0; j < pattern.length; j += 1) {
+      const width = pattern[j] === "w" ? wide : narrow;
+      if (j % 2 === 0) {
+        rects.push({ x: cursor, w: width });
+      }
+      cursor += width;
+    }
+    cursor += gap;
+  }
+
+  const totalWidth = cursor + 12;
+
+  return (
+    <div
+      style={{
+        background: "#ffffff",
+        borderRadius: 12,
+        padding: "10px 10px 8px 10px",
+        textAlign: "center",
+        boxShadow: "inset 0 0 0 1px rgba(15, 23, 42, 0.12)",
+      }}
+    >
+      <svg
+        viewBox={"0 0 " + totalWidth + " 58"}
+        style={{ width: "100%", height: 56, display: "block" }}
+        aria-label={"Player Barcode " + clean}
+      >
+        <rect x="0" y="0" width={totalWidth} height="58" fill="#ffffff" />
+        {rects.map((r, idx) => (
+          <rect key={idx} x={r.x} y="3" width={r.w} height="52" fill="#050a18" />
+        ))}
+      </svg>
+      <div
+        style={{
+          marginTop: 6,
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+          fontSize: 13,
+          fontWeight: 900,
+          letterSpacing: "0.24em",
+          color: "#050a18",
+        }}
+      >
+        {clean}
+      </div>
+    </div>
+  );
 }
 
 function PlayerAvatar({
@@ -836,16 +1000,195 @@ function PlayerPortraitBanner({
   );
 }
 
-function DonutPieChart({ slices, centerLabel }: { slices: PieSlice[]; centerLabel: string }) {
+function DigitalIdCardView({
+  player,
+  clubName,
+  wsKey,
+}: {
+  player: Player;
+  clubName: string;
+  wsKey: WorkspaceKey;
+}) {
+  const [copied, setCopied] = useState<boolean>(false);
+  const code = playerClubIdCode(wsKey, player);
+
+  const handleCopyCode = () => {
+    if (typeof navigator !== "undefined" && navigator.clipboard) {
+      navigator.clipboard.writeText(code).catch(() => {});
+    }
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1800);
+  };
+
+  const shareText =
+    clubName +
+    " OFFICIAL PLAYER ID\n" +
+    "Name: " +
+    player.name +
+    "\nJersey: #" +
+    player.jerseyNo +
+    "\nRole: " +
+    player.role +
+    "\nPlayer ID Code: " +
+    code +
+    "\nMVP Points: " +
+    player.mvpPoints;
+
+  return (
+    <div>
+      <div className="il-id-pass">
+        {/* Lanyard Notch */}
+        <div
+          style={{
+            width: 56,
+            height: 7,
+            borderRadius: 99,
+            background: "rgba(2, 6, 23, 0.85)",
+            border: "1px solid rgba(251, 191, 36, 0.45)",
+            margin: "0 auto 12px auto",
+          }}
+        />
+
+        {/* Pass Top Header */}
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 14 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 9 }}>
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                background: "linear-gradient(135deg, #fde68a, #f59e0b)",
+                color: "#050a18",
+                fontWeight: 900,
+                fontSize: 13,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+              }}
+            >
+              {wsKey === "gm" ? "GM" : "IL"}
+            </div>
+            <div>
+              <div style={{ fontWeight: 900, fontSize: 13, color: "#fde68a", letterSpacing: "0.05em" }}>
+                {clubName}
+              </div>
+              <div style={{ fontSize: 9, color: "#94a3b8", fontWeight: 800, letterSpacing: "0.12em" }}>
+                OFFICIAL PLAYER ID PASS
+              </div>
+            </div>
+          </div>
+
+          <span
+            className="il-pill"
+            style={{ background: "rgba(52, 211, 153, 0.2)", color: "#6ee7b7", border: "1px solid rgba(52,211,153,0.45)" }}
+          >
+            2026-27
+          </span>
+        </div>
+
+        {/* Player Identity Section */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            background: "rgba(2, 6, 23, 0.65)",
+            border: "1px solid rgba(251, 191, 36, 0.3)",
+            borderRadius: 16,
+            padding: 12,
+            marginBottom: 12,
+          }}
+        >
+          <PlayerAvatar
+            playerId={player.id}
+            name={player.name}
+            size={76}
+            borderColor="#fbbf24"
+          />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 6 }}>
+              <div style={{ fontWeight: 900, fontSize: 17, lineHeight: 1.15 }}>{player.name}</div>
+              <div style={{ fontWeight: 900, fontSize: 22, color: "#fbbf24", lineHeight: 1 }}>
+                #{player.jerseyNo}
+              </div>
+            </div>
+
+            <div style={{ fontSize: 12, color: "#7dd3fc", fontWeight: 700, marginTop: 4 }}>
+              {player.role}
+            </div>
+
+            <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginTop: 7 }}>
+              <span
+                className="il-pill"
+                style={{
+                  background: player.isAdmin ? "rgba(251,191,36,0.22)" : "rgba(56,189,248,0.18)",
+                  color: player.isAdmin ? "#fbbf24" : "#7dd3fc",
+                  fontSize: 9,
+                }}
+              >
+                {player.isAdmin ? "VERIFIED ADMIN" : "VERIFIED PLAYER"}
+              </span>
+              <span className="il-pill" style={{ background: "rgba(167,139,250,0.2)", color: "#ddd6fe", fontSize: 9 }}>
+                {player.mvpPoints} MVP PTS
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Metadata Strip */}
+        <div className="il-grid-3" style={{ textAlign: "center", marginBottom: 12, gap: 6 }}>
+          <div style={{ background: "rgba(2, 6, 23, 0.65)", padding: "6px 4px", borderRadius: 10 }}>
+            <div style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700 }}>SQUAD</div>
+            <div style={{ fontSize: 11, fontWeight: 900, color: "#f8fafc" }}>
+              {wsKey === "gm" ? "G.M XI" : "INDORE"}
+            </div>
+          </div>
+          <div style={{ background: "rgba(2, 6, 23, 0.65)", padding: "6px 4px", borderRadius: 10 }}>
+            <div style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700 }}>AWARD</div>
+            <div style={{ fontSize: 10, fontWeight: 900, color: "#fde68a", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {player.funAward}
+            </div>
+          </div>
+          <div style={{ background: "rgba(2, 6, 23, 0.65)", padding: "6px 4px", borderRadius: 10 }}>
+            <div style={{ fontSize: 9, color: "var(--muted)", fontWeight: 700 }}>STATUS</div>
+            <div style={{ fontSize: 11, fontWeight: 900, color: "#34d399" }}>ACTIVE</div>
+          </div>
+        </div>
+
+        {/* Scannable Code 39 Barcode */}
+        <Code39Barcode value={code} />
+      </div>
+
+      {/* Share & Copy Actions */}
+      <div className="il-grid-2" style={{ marginTop: 10 }}>
+        <button type="button" className="il-btn" onClick={handleCopyCode}>
+          {copied ? <Check size={14} color="#34d399" /> : <Copy size={14} />}
+          {copied ? "Copied!" : "Copy ID Code"}
+        </button>
+        <a
+          href={"https://wa.me/?text=" + encodeURIComponent(shareText)}
+          target="_blank"
+          rel="noreferrer"
+          className="il-btn il-btn-emerald"
+          style={{ textDecoration: "none" }}
+        >
+          <Share2 size={14} /> Share Pass
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function DonutPieChart({ slices, centerLabel, subLabel }: { slices: PieSlice[]; centerLabel: string; subLabel?: string }) {
   const total = slices.reduce((sum, s) => sum + Math.max(0, s.value), 0);
-  const radius = 56;
+  const radius = 50;
   const circumference = 2 * Math.PI * radius;
   let cumulative = 0;
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 18, flexWrap: "wrap", justifyContent: "center" }}>
-      <svg width="148" height="148" viewBox="0 0 148 148">
-        <circle cx="74" cy="74" r={radius} fill="none" stroke="rgba(148,163,184,0.16)" strokeWidth="20" />
+    <div style={{ display: "flex", alignItems: "center", gap: 16, flexWrap: "wrap", justifyContent: "center" }}>
+      <svg width="132" height="132" viewBox="0 0 132 132">
+        <circle cx="66" cy="66" r={radius} fill="none" stroke="rgba(148,163,184,0.16)" strokeWidth="16" />
         {total > 0 &&
           slices.map((slice) => {
             const val = Math.max(0, slice.value);
@@ -857,33 +1200,33 @@ function DonutPieChart({ slices, centerLabel }: { slices: PieSlice[]; centerLabe
             return (
               <circle
                 key={slice.label}
-                cx="74"
-                cy="74"
+                cx="66"
+                cy="66"
                 r={radius}
                 fill="none"
                 stroke={slice.color}
-                strokeWidth="20"
+                strokeWidth="16"
                 strokeDasharray={dash + " " + circumference}
                 strokeDashoffset={offset}
-                transform="rotate(-90 74 74)"
+                transform="rotate(-90 66 66)"
               />
             );
           })}
-        <text x="74" y="70" textAnchor="middle" fill="#94a3b8" fontSize="10" fontWeight="700">
-          BALANCE
+        <text x="66" y="62" textAnchor="middle" fill="#94a3b8" fontSize="9" fontWeight="700">
+          {subLabel || "BALANCE"}
         </text>
-        <text x="74" y="88" textAnchor="middle" fill="#ffffff" fontSize="14" fontWeight="900">
+        <text x="66" y="79" textAnchor="middle" fill="#ffffff" fontSize="14" fontWeight="900">
           {centerLabel}
         </text>
       </svg>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 8, minWidth: 165 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 150 }}>
         {slices.map((s) => {
           const pct = total > 0 ? Math.round((Math.max(0, s.value) / total) * 100) : 0;
           return (
-            <div key={s.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, fontSize: 13 }}>
-              <span style={{ display: "inline-flex", alignItems: "center", gap: 8 }}>
-                <span style={{ width: 10, height: 10, borderRadius: "50%", background: s.color, display: "inline-block" }} />
+            <div key={s.label} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, fontSize: 12 }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 7 }}>
+                <span style={{ width: 9, height: 9, borderRadius: "50%", background: s.color, display: "inline-block" }} />
                 {s.label}
               </span>
               <strong>
@@ -932,8 +1275,9 @@ export default function App() {
   const [groundUrlDraft, setGroundUrlDraft] = useState<string>("");
   const [settingsSavedMsg, setSettingsSavedMsg] = useState<string>("");
 
+  // Match Creation & Auto Team Selector
   const [showCreateWizard, setShowCreateWizard] = useState<boolean>(false);
-  const [wizTitle, setWizTitle] = useState<string>("Squad Practice Clash");
+  const [wizTitle, setWizTitle] = useState<string>("Squad Clash");
   const [wizDateTime, setWizDateTime] = useState<string>(() => threeDaysFromNowIso());
   const [wizOvers, setWizOvers] = useState<number>(10);
   const [wizTeamAName, setWizTeamAName] = useState<string>("Legends XI");
@@ -944,25 +1288,38 @@ export default function App() {
   const [coinFlipping, setCoinFlipping] = useState<boolean>(false);
   const [coinResult, setCoinResult] = useState<string>("");
 
+  // Live Scoring & End-of-Over Bowler Popup
   const [wicketType, setWicketType] = useState<string>("Bowled");
   const [umpireBanner, setUmpireBanner] = useState<string>("");
   const [milestonePopup, setMilestonePopup] = useState<string>("");
-  const [showSwapBowler, setShowSwapBowler] = useState<boolean>(false);
-  const [swapBowlerName, setSwapBowlerName] = useState<string>("");
+  const [showNextBowlerModal, setShowNextBowlerModal] = useState<boolean>(false);
+  const [lastOverBowler, setLastOverBowler] = useState<string>("");
 
+  // Profile, Digital ID Card, Player Editor & Add Player Modals
   const [selectedProfileId, setSelectedProfileId] = useState<string>("");
-  const [editPlayerId, setEditPlayerId] = useState<string>("");
-  const [editAwardText, setEditAwardText] = useState<string>("");
-  const [leaderTab, setLeaderTab] = useState<"team" | "batting" | "bowling">("team");
+  const [profileTab, setProfileTab] = useState<"stats" | "career" | "awards" | "idcard">("stats");
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null);
+  const [showAddPlayerModal, setShowAddPlayerModal] = useState<boolean>(false);
+  const [addName, setAddName] = useState<string>("");
+  const [addJersey, setAddJersey] = useState<string>("99");
+  const [addRole, setAddRole] = useState<PlayerRole>("All-Rounder");
+  const [addPass, setAddPass] = useState<string>("");
+  const [addIsAdmin, setAddIsAdmin] = useState<boolean>(false);
+  const [addIsGM, setAddIsGM] = useState<boolean>(false);
 
+  const [leaderTab, setLeaderTab] = useState<"mvp" | "batting" | "bowling">("mvp");
+
+  // Finance
   const [trTitle, setTrTitle] = useState<string>("");
   const [trType, setTrType] = useState<LedgerType>("CREDIT");
   const [trAmount, setTrAmount] = useState<string>("");
   const [trMember, setTrMember] = useState<string>("All Squad");
 
+  // Chat
   const [chatText, setChatText] = useState<string>("");
   const chatEndRef = useRef<HTMLDivElement | null>(null);
 
+  // LegendBot
   const [voiceOutput, setVoiceOutput] = useState<boolean>(false);
   const [isListening, setIsListening] = useState<boolean>(false);
   const [aiInput, setAiInput] = useState<string>("");
@@ -972,7 +1329,7 @@ export default function App() {
       id: "bot_init",
       role: "bot",
       layer: "LegendBot Cricket AI",
-      text: "Namaste! Ask me about the active club workspace (live score, Orange/Purple Cap, funds, poll) or any IPL and International cricket question.",
+      text: "Namaste! Ask me about the active club workspace (live score, MVP leader, Orange/Purple Cap, funds, poll) or any IPL and International cricket question.",
       timestamp: nowTime(),
     },
   ]);
@@ -1023,10 +1380,11 @@ export default function App() {
   const activeUserInWs = session
     ? ws.players.find((p) => p.id === session.playerId) || authPlayer
     : null;
-  const isAdmin = Boolean(session?.isAdminSession && authPlayer?.isAdmin);
+  const isAdmin = Boolean(authPlayer?.isAdmin);
 
   const orangeCapHolder = [...ws.players].sort((a, b) => b.runs - a.runs)[0];
   const purpleCapHolder = [...ws.players].sort((a, b) => b.wickets - a.wickets)[0];
+  const mvpLeader = [...ws.players].sort((a, b) => b.mvpPoints - a.mvpPoints)[0];
 
   const totalCredits = ws.treasury
     .filter((t) => t.type === "CREDIT")
@@ -1041,6 +1399,12 @@ export default function App() {
     .filter((t) => t.type === "ADVANCE")
     .reduce((sum, t) => sum + t.amount, 0);
   const clubNetBalance = totalCredits + totalFines + totalAdvances - totalExpenses;
+
+  const winsCount = ws.matchHistory.filter((m) => m.wonFlag === "W").length;
+  const winRate =
+    ws.matchHistory.length > 0
+      ? Math.round((winsCount / ws.matchHistory.length) * 100)
+      : 0;
 
   const countdownTargetMs = (() => {
     if (ws.scheduledMatch && ws.scheduledMatch.dateTime) {
@@ -1100,12 +1464,12 @@ export default function App() {
       setLoginError("Incorrect password. Please try again.");
       return;
     }
-    const check = verifyPlayerPassword(player, loginPassword, state.customPasswords);
-    if (!check.ok) {
+    const ok = verifyPlayerPassword(player, loginPassword, state.customPasswords);
+    if (!ok) {
       setLoginError("Incorrect password. Please try again.");
       return;
     }
-    setSession({ playerId: player.id, isAdminSession: check.asAdmin });
+    setSession({ playerId: player.id });
     setWorkspace("il");
     setLoginPassword("");
     setLoginError("");
@@ -1180,8 +1544,8 @@ export default function App() {
       setGmLoginErr("Incorrect password. Please try again.");
       return;
     }
-    const check = verifyPlayerPassword(player, gmLoginPass, state.customPasswords);
-    if (!check.ok) {
+    const ok = verifyPlayerPassword(player, gmLoginPass, state.customPasswords);
+    if (!ok) {
       setGmLoginErr("Incorrect password. Please try again.");
       return;
     }
@@ -1191,6 +1555,161 @@ export default function App() {
     setGmLoginPass("");
     setGmLoginErr("");
     setTab("home");
+  };
+
+  const handleSaveEditedPlayer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPlayer) return;
+    const edited = {
+      ...editingPlayer,
+      name: editingPlayer.name.trim() || "Player",
+      jerseyNo: Math.max(0, Math.min(999, Number(editingPlayer.jerseyNo) || 0)),
+      mvpPoints: Math.max(0, Number(editingPlayer.mvpPoints) || 0),
+      runs: Math.max(0, Number(editingPlayer.runs) || 0),
+      wickets: Math.max(0, Number(editingPlayer.wickets) || 0),
+      matches: Math.max(0, Number(editingPlayer.matches) || 0),
+      finesDue: Math.max(0, Number(editingPlayer.finesDue) || 0),
+      advanceCredit: Math.max(0, Number(editingPlayer.advanceCredit) || 0),
+      funAward: editingPlayer.funAward.trim() || "Squad Member",
+    };
+
+    setState((prev) => {
+      const ilAdminsCount = prev.workspaces.il.players.filter((p) => p.isAdmin).length;
+      const prevPlayer = prev.workspaces.il.players.find((p) => p.id === edited.id);
+      const finalIsAdmin =
+        prevPlayer?.isAdmin && !edited.isAdmin && ilAdminsCount <= 1
+          ? true
+          : edited.isAdmin;
+
+      const updateList = (list: Player[], isCurrentWs: boolean): Player[] =>
+        list.map((p) => {
+          if (p.id !== edited.id) return p;
+          if (isCurrentWs) {
+            return { ...edited, isAdmin: finalIsAdmin };
+          }
+          return {
+            ...p,
+            name: edited.name,
+            jerseyNo: edited.jerseyNo,
+            role: edited.role,
+            isAdmin: finalIsAdmin,
+            isGM: edited.isGM,
+          };
+        });
+
+      const nextIlPlayers = updateList(prev.workspaces.il.players, workspace === "il");
+      let nextGmPlayers = updateList(prev.workspaces.gm.players, workspace === "gm");
+
+      const existsInGm = nextGmPlayers.some((p) => p.id === edited.id);
+      if (edited.isGM && !existsInGm) {
+        nextGmPlayers = [
+          ...nextGmPlayers,
+          {
+            ...edited,
+            isAdmin: finalIsAdmin,
+            matches: 0,
+            runs: 0,
+            ballsFaced: 0,
+            fours: 0,
+            sixes: 0,
+            wickets: 0,
+            oversBowled: 0,
+            runsConceded: 0,
+            mvpPoints: 0,
+            finesDue: 0,
+            advanceCredit: 0,
+          },
+        ];
+      } else if (!edited.isGM && existsInGm) {
+        nextGmPlayers = nextGmPlayers.filter((p) => p.id !== edited.id);
+      }
+
+      return {
+        ...prev,
+        workspaces: {
+          il: { ...prev.workspaces.il, players: nextIlPlayers },
+          gm: { ...prev.workspaces.gm, players: nextGmPlayers },
+        },
+      };
+    });
+    setEditingPlayer(null);
+  };
+
+  const handleAddPlayer = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addName.trim()) return;
+    const newId = "p" + (allIlPlayers.length + 1);
+    const newPlayer: Player = {
+      id: newId,
+      name: addName.trim(),
+      jerseyNo: Math.max(0, Math.min(999, Number(addJersey) || 99)),
+      role: addRole,
+      isAdmin: addIsAdmin,
+      isGM: addIsGM || workspace === "gm",
+      defaultPass: addPass.trim() || "Player123",
+      matches: 0,
+      runs: 0,
+      ballsFaced: 0,
+      fours: 0,
+      sixes: 0,
+      wickets: 0,
+      oversBowled: 0,
+      runsConceded: 0,
+      mvpPoints: 0,
+      finesDue: 0,
+      advanceCredit: 0,
+      funAward: "Squad Member",
+    };
+
+    setState((prev) => ({
+      ...prev,
+      workspaces: {
+        il: {
+          ...prev.workspaces.il,
+          players: [...prev.workspaces.il.players, newPlayer],
+        },
+        gm: {
+          ...prev.workspaces.gm,
+          players: newPlayer.isGM
+            ? [...prev.workspaces.gm.players, { ...newPlayer }]
+            : prev.workspaces.gm.players,
+        },
+      },
+    }));
+
+    setAddName("");
+    setAddJersey("99");
+    setAddPass("");
+    setAddIsAdmin(false);
+    setAddIsGM(false);
+    setShowAddPlayerModal(false);
+  };
+
+  const handleToggleAdminQuick = (playerId: string) => {
+    setState((prev) => {
+      const target = prev.workspaces.il.players.find((p) => p.id === playerId);
+      if (!target) return prev;
+      const adminsCount = prev.workspaces.il.players.filter((p) => p.isAdmin).length;
+      if (target.isAdmin && adminsCount <= 1) return prev;
+      const nextFlag = !target.isAdmin;
+      return {
+        ...prev,
+        workspaces: {
+          il: {
+            ...prev.workspaces.il,
+            players: prev.workspaces.il.players.map((p) =>
+              p.id === playerId ? { ...p, isAdmin: nextFlag } : p
+            ),
+          },
+          gm: {
+            ...prev.workspaces.gm,
+            players: prev.workspaces.gm.players.map((p) =>
+              p.id === playerId ? { ...p, isAdmin: nextFlag } : p
+            ),
+          },
+        },
+      };
+    });
   };
 
   const handleVotePoll = (choice: PollChoice) => {
@@ -1224,10 +1743,10 @@ export default function App() {
     }, 750);
   };
 
-  const createScheduledMatch = () => {
+  const createScheduledMatch = (randomize: boolean) => {
     const selected = ws.players.filter((p) => wizSelectedIds.includes(p.id));
     if (selected.length < 4) return;
-    const { teamA, teamB } = splitTeamsByRanking(selected);
+    const { teamA, teamB } = splitTeamsFairly(selected, randomize);
     const capA = autoPickCaptains(teamA);
     const capB = autoPickCaptains(teamB);
 
@@ -1289,12 +1808,12 @@ export default function App() {
     });
   };
 
-  const reRollScheduledTeams = () => {
+  const autoSelectScheduledTeams = (randomize: boolean) => {
     updateWorkspace((prevWs) => {
       const sch = prevWs.scheduledMatch;
       if (!sch) return prevWs;
       const selected = prevWs.players.filter((p) => sch.selectedPlayerIds.includes(p.id));
-      const { teamA, teamB } = splitTeamsByRanking(selected);
+      const { teamA, teamB } = splitTeamsFairly(selected, randomize);
       const capA = autoPickCaptains(teamA);
       const capB = autoPickCaptains(teamB);
       return {
@@ -1396,6 +1915,8 @@ export default function App() {
     };
 
     updateWorkspace((prevWs) => ({ ...prevWs, liveMatch: live }));
+    setLastOverBowler("");
+    setShowNextBowlerModal(false);
     setUmpireBanner("PLAY! Innings 1 underway.");
     speak("Match started!");
   };
@@ -1416,7 +1937,7 @@ export default function App() {
         bestName = name;
       }
     });
-    return bestPts > 0 ? bestName + " (" + bestPts + " pts)" : "TBD";
+    return bestPts > 0 ? bestName + " (" + bestPts + " MVP pts)" : "TBD";
   };
 
   const buildWhatsappScorecard = (m: LiveMatch): string => {
@@ -1477,7 +1998,7 @@ export default function App() {
     options?: { isWide?: boolean; isNoBall?: boolean; isWicket?: boolean }
   ) => {
     const m = ws.liveMatch;
-    if (!m || m.isCompleted) return;
+    if (!m || m.isCompleted || showNextBowlerModal) return;
 
     const isWide = Boolean(options?.isWide);
     const isNoBall = Boolean(options?.isNoBall);
@@ -1594,7 +2115,8 @@ export default function App() {
       nextNonStriker = temp;
     }
 
-    if (isLegal && nextBalls % 6 === 0) {
+    const overJustCompleted = isLegal && nextBalls > 0 && nextBalls % 6 === 0;
+    if (overJustCompleted) {
       const temp = nextStriker;
       nextStriker = nextNonStriker;
       nextNonStriker = temp;
@@ -1636,6 +2158,9 @@ export default function App() {
     } else if (runsScored === 4) {
       setUmpireBanner("CRACKING FOUR!");
       speak("Four runs!");
+    } else if (overJustCompleted && !inningsEnded) {
+      setUmpireBanner("END OF OVER " + Math.floor(nextBalls / 6) + "! Select next bowler.");
+      speak("Over complete! Choose the next bowler.");
     }
 
     updateWorkspace((prevWs) => ({
@@ -1656,6 +2181,21 @@ export default function App() {
         history: nextHistory,
       },
     }));
+
+    if (overJustCompleted && !inningsEnded && !isCompleted) {
+      setLastOverBowler(m.bowler);
+      setShowNextBowlerModal(true);
+    }
+  };
+
+  const selectNewBowler = (bowlerName: string) => {
+    updateWorkspace((prevWs) =>
+      prevWs.liveMatch
+        ? { ...prevWs, liveMatch: { ...prevWs.liveMatch, bowler: bowlerName } }
+        : prevWs
+    );
+    setShowNextBowlerModal(false);
+    setUmpireBanner("New Bowler: " + bowlerName + " takes the ball!");
   };
 
   const startSecondInnings = () => {
@@ -1710,6 +2250,8 @@ export default function App() {
         bowlers: initBowlers,
       },
     }));
+    setLastOverBowler("");
+    setShowNextBowlerModal(true);
     setUmpireBanner("2nd Innings! Target is " + (m.runs + 1));
   };
 
@@ -1764,6 +2306,8 @@ export default function App() {
         history: [],
       },
     }));
+    setLastOverBowler("");
+    setShowNextBowlerModal(false);
     setMilestonePopup("SUPER OVER LIVE! 6 Balls - 2 Wickets Max!");
   };
 
@@ -1793,18 +2337,6 @@ export default function App() {
       };
     });
     setUmpireBanner(m.striker + " Retired Hurt. " + nextBatter + " walks in.");
-  };
-
-  const handleMidOverSwap = () => {
-    const m = ws.liveMatch;
-    if (!m || !swapBowlerName) return;
-    updateWorkspace((prevWs) =>
-      prevWs.liveMatch
-        ? { ...prevWs, liveMatch: { ...prevWs.liveMatch, bowler: swapBowlerName } }
-        : prevWs
-    );
-    setShowSwapBowler(false);
-    setUmpireBanner("Mid-Over Swap: " + swapBowlerName + " bowls now.");
   };
 
   const undoLiveBall = () => {
@@ -1849,6 +2381,7 @@ export default function App() {
         wickets: last.isWicket ? Math.max(0, m.wickets - 1) : m.wickets,
         balls: wasLegal ? Math.max(0, m.balls - 1) : m.balls,
         striker: last.batsman,
+        bowler: last.bowler,
         freeHitActive: last.isFreeHit,
         isCompleted: false,
         isTied: false,
@@ -1857,6 +2390,7 @@ export default function App() {
         history: rest,
       },
     }));
+    setShowNextBowlerModal(false);
     setUmpireBanner("Last ball undone.");
   };
 
@@ -1869,12 +2403,15 @@ export default function App() {
       m.firstInningsScore !== null
         ? " vs " + m.bowlingTeam + " " + m.firstInningsScore + "/" + (m.firstInningsWickets ?? 0)
         : "";
+    const wonFlag: "W" | "L" | "T" = m.isTied ? "T" : m.resultText.includes("won") ? "W" : "L";
+
     const completed: CompletedMatch = {
       id: uid("hist"),
       title: m.title,
       date: new Date().toISOString().slice(0, 10),
       summary: m.battingTeam + " " + m.runs + "/" + m.wickets + " (" + formatOvers(m.balls) + " ov)" + firstInnSummary,
       winner: m.resultText || "Completed",
+      wonFlag,
       mvp,
       scorecardText,
     };
@@ -1885,6 +2422,9 @@ export default function App() {
         const bowl = m.bowlers[pl.name];
         const participated = m.teamAPlayers.includes(pl.name) || m.teamBPlayers.includes(pl.name);
         if (!participated) return pl;
+        const earnedMvp =
+          (bat ? bat.runs + bat.fours * 2 + bat.sixes * 4 : 0) +
+          (bowl ? bowl.wickets * 25 : 0);
         return {
           ...pl,
           matches: pl.matches + 1,
@@ -1895,6 +2435,7 @@ export default function App() {
           wickets: pl.wickets + (bowl ? bowl.wickets : 0),
           oversBowled: pl.oversBowled + (bowl ? Math.ceil(bowl.balls / 6) : 0),
           runsConceded: pl.runsConceded + (bowl ? bowl.runs : 0),
+          mvpPoints: pl.mvpPoints + earnedMvp,
         };
       });
 
@@ -1906,7 +2447,8 @@ export default function App() {
         matchHistory: [completed, ...prevWs.matchHistory],
       };
     });
-    setUmpireBanner("Match saved to Match History and stats updated.");
+    setShowNextBowlerModal(false);
+    setUmpireBanner("Match archived and MVP points updated!");
   };
 
   const toggleVoiceInput = () => {
@@ -1967,21 +2509,25 @@ export default function App() {
 
     const q = prompt.toLowerCase();
 
-    if (q.includes("orange") || q.includes("purple") || q.includes("cap") || q.includes("top")) {
+    if (q.includes("mvp") || q.includes("orange") || q.includes("purple") || q.includes("cap") || q.includes("top")) {
       const reply =
         ws.clubName +
-        " Leaders: Orange Cap is " +
+        " Leaders: MVP Leader is " +
+        mvpLeader.name +
+        " (" +
+        mvpLeader.mvpPoints +
+        " pts). Orange Cap: " +
         orangeCapHolder.name +
         " (" +
         orangeCapHolder.runs +
-        " runs). Purple Cap is " +
+        " runs). Purple Cap: " +
         purpleCapHolder.name +
         " (" +
         purpleCapHolder.wickets +
         " wickets).";
       setAiMessages((prev) => [
         ...prev,
-        { id: uid("b"), role: "bot", layer: "Club Caps", text: reply, timestamp: nowTime() },
+        { id: uid("b"), role: "bot", layer: "Club Caps and MVP", text: reply, timestamp: nowTime() },
       ]);
       speak(reply);
       return;
@@ -2045,7 +2591,7 @@ export default function App() {
           "."
         : ws.scheduledMatch
         ? "Upcoming match: " + ws.scheduledMatch.title + " (" + ws.scheduledMatch.overs + " overs)."
-        : "No active match in " + ws.clubName + " yet. Admins can create one in the Matches tab.";
+        : "No active match in " + ws.clubName + " yet. Admins can create one in Matches.";
       setAiMessages((prev) => [
         ...prev,
         { id: uid("b"), role: "bot", layer: "Match Engine", text: reply, timestamp: nowTime() },
@@ -2064,8 +2610,7 @@ export default function App() {
           context: {
             club: ws.clubName,
             balance: clubNetBalance,
-            orangeCap: orangeCapHolder.name + " (" + orangeCapHolder.runs + ")",
-            purpleCap: purpleCapHolder.name + " (" + purpleCapHolder.wickets + ")",
+            mvpLeader: mvpLeader.name + " (" + mvpLeader.mvpPoints + " pts)",
           },
         }),
       });
@@ -2086,9 +2631,11 @@ export default function App() {
         clubNetBalance +
         ", Matches Played: " +
         ws.matchHistory.length +
-        ", Squad Size: " +
-        ws.players.length +
-        ". Ask about caps, dues, poll, or live score!";
+        ", MVP Leader: " +
+        mvpLeader.name +
+        " (" +
+        mvpLeader.mvpPoints +
+        " pts).";
       setAiMessages((prev) => [
         ...prev,
         { id: uid("b"), role: "bot", layer: "LegendBot Club Intel", text: fallback, timestamp: nowTime() },
@@ -2113,15 +2660,15 @@ export default function App() {
           justifyContent: "center",
           padding: 18,
           background:
-            "radial-gradient(circle at top, rgba(251,191,36,0.16), rgba(11,19,40,0.96) 55%, #040816 100%)",
+            "radial-gradient(circle at top, rgba(251,191,36,0.18), rgba(11,19,40,0.96) 55%, #030714 100%)",
         }}
       >
         <style>{themeCss}</style>
-        <div className="il-card il-hero-card" style={{ width: "100%", maxWidth: 430, padding: 24 }}>
+        <div className="il-card il-hero-banner" style={{ width: "100%", maxWidth: 430, padding: 24 }}>
           <div style={{ textAlign: "center", marginBottom: 20 }}>
             <div
               className="il-crest"
-              style={{ width: 64, height: 64, fontSize: 24, margin: "0 auto 12px auto" }}
+              style={{ width: 66, height: 66, fontSize: 25, margin: "0 auto 12px auto" }}
             >
               IL
             </div>
@@ -2131,7 +2678,7 @@ export default function App() {
             >
               <Flame size={13} /> PLAY - MANAGE - WIN
             </div>
-            <h1 style={{ margin: 0, fontSize: 27, fontWeight: 900, letterSpacing: "0.03em" }}>
+            <h1 style={{ margin: 0, fontSize: 28, fontWeight: 900, letterSpacing: "0.03em" }}>
               INDORE LEGENDS
             </h1>
             <p style={{ margin: "6px 0 0 0", fontSize: 13, color: "var(--muted)" }}>
@@ -2140,16 +2687,16 @@ export default function App() {
           </div>
 
           <form onSubmit={handleLogin} style={{ display: "grid", gap: 14 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 10, borderRadius: 14, background: "rgba(2,6,23,0.65)", border: "1px solid var(--border)" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 10, borderRadius: 14, background: "rgba(2,6,23,0.68)", border: "1px solid var(--border)" }}>
               <PlayerAvatar
                 playerId={selectedLoginPlayer.id}
                 name={selectedLoginPlayer.name}
-                size={52}
+                size={54}
                 rounded
               />
               <div style={{ flex: 1 }}>
                 <label style={{ fontSize: 10, color: "var(--gold)", fontWeight: 800, display: "block", marginBottom: 4, letterSpacing: "0.08em" }}>
-                  SELECT PLAYER
+                  SQUAD MEMBER (#{selectedLoginPlayer.jerseyNo})
                 </label>
                 <select
                   className="il-select"
@@ -2162,7 +2709,7 @@ export default function App() {
                 >
                   {allIlPlayers.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name}
+                      #{p.jerseyNo} {p.name}
                     </option>
                   ))}
                 </select>
@@ -2229,14 +2776,6 @@ export default function App() {
     );
   }
 
-  const userSR =
-    activeUserInWs.ballsFaced > 0
-      ? ((activeUserInWs.runs / activeUserInWs.ballsFaced) * 100).toFixed(1)
-      : "0.0";
-  const userEcon =
-    activeUserInWs.oversBowled > 0
-      ? (activeUserInWs.runsConceded / activeUserInWs.oversBowled).toFixed(2)
-      : "0.00";
   const myPollVote = ws.poll.find((v) => v.playerId === activeUserInWs.id)?.choice || "";
 
   const lm = ws.liveMatch;
@@ -2290,7 +2829,7 @@ export default function App() {
   const rankedPlayers = [...ws.players].sort((a, b) => {
     if (leaderTab === "batting") return b.runs - a.runs;
     if (leaderTab === "bowling") return b.wickets - a.wickets;
-    return playerRankScore(b) - playerRankScore(a);
+    return b.mvpPoints - a.mvpPoints;
   });
 
   const selectedProfile = selectedProfileId
@@ -2298,1883 +2837,2500 @@ export default function App() {
     : null;
 
   const navItems: { id: TabKey; label: string; icon: React.ReactNode }[] = [
-    { id: "home", label: "Home", icon: <Home size={17} /> },
-    { id: "match", label: "Matches", icon: <Trophy size={17} /> },
+    { id: "home", label: "Dashboard", icon: <Home size={17} /> },
     { id: "squad", label: "Squad", icon: <Users size={17} /> },
-    { id: "leaderboard", label: "Ranks", icon: <BarChart3 size={17} /> },
+    { id: "match", label: "Matches", icon: <Trophy size={17} /> },
+    { id: "leaderboard", label: "Leaderboard", icon: <BarChart3 size={17} /> },
     { id: "treasury", label: "Finance", icon: <Wallet size={17} /> },
     { id: "chat", label: "Chat", icon: <MessageSquare size={17} /> },
-    { id: "ai", label: "Bot", icon: <Bot size={17} /> },
+    { id: "ai", label: "LegendBot", icon: <Bot size={17} /> },
     { id: "settings", label: "Settings", icon: <Settings size={17} /> },
   ];
 
+  const winDonutRadius = 36;
+  const winDonutCirc = 2 * Math.PI * winDonutRadius;
+  const winDonutDash = (winRate / 100) * winDonutCirc;
+
   return (
-    <div className="il-shell">
+    <div className="il-app-layout">
       <style>{themeCss}</style>
 
-      {/* Pinned Announcement Bar */}
-      <div className="il-gold-bar">
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <Bell size={15} />
-          <span>{ws.announcement}</span>
+      {/* Desktop Stadium Sidebar */}
+      <aside className="il-sidebar">
+        <div>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 18 }}>
+            <div className="il-crest" onClick={handleCrestTap} title="Triple-tap for Ganesh Mandir">
+              {workspace === "gm" ? "GM" : "IL"}
+            </div>
+            <div>
+              <div style={{ fontWeight: 900, fontSize: 15, color: "#fbbf24" }}>{ws.clubName}</div>
+              <div style={{ fontSize: 10, color: "var(--muted)", letterSpacing: "0.08em" }}>
+                PLAY • MANAGE • WIN
+              </div>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gap: 5 }}>
+            {navItems.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className={"il-side-btn " + (tab === item.id ? "active" : "")}
+                onClick={() => setTab(item.id)}
+              >
+                {item.icon}
+                <span>{item.label}</span>
+              </button>
+            ))}
+          </div>
         </div>
-        {isAdmin && (
-          <button
-            type="button"
-            className="il-btn"
-            style={{ padding: "4px 9px", fontSize: 11, background: "#090d1e", color: "#fbbf24" }}
-            onClick={() => setTab("settings")}
-          >
-            Edit
+
+        <div style={{ borderTop: "1px solid var(--border)", paddingTop: 12 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+            <PlayerAvatar playerId={authPlayer.id} name={authPlayer.name} size={38} rounded />
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontWeight: 800, fontSize: 13, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                {authPlayer.name.split(" ")[0]}
+              </div>
+              <div style={{ fontSize: 10, color: isAdmin ? "#fbbf24" : "#38bdf8", fontWeight: 800 }}>
+                {isAdmin ? "ADMIN • #" + authPlayer.jerseyNo : "PLAYER • #" + authPlayer.jerseyNo}
+              </div>
+            </div>
+          </div>
+          <button type="button" className="il-btn" style={{ width: "100%", padding: "8px 10px", fontSize: 12, color: "#fda4af" }} onClick={handleLogout}>
+            <LogOut size={14} /> Logout
           </button>
-        )}
-      </div>
-
-      {/* Header */}
-      <header className="il-header">
-        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-          <div className="il-crest" onClick={handleCrestTap} title="Club Crest">
-            {workspace === "gm" ? "GM" : "IL"}
-          </div>
-          <div>
-            <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: "0.03em" }}>
-              {ws.clubName}
-            </div>
-            <div style={{ fontSize: 11, color: "var(--muted)" }}>
-              {authPlayer.name} {isAdmin ? "- ADMIN" : "- PLAYER"}
-            </div>
-          </div>
         </div>
+      </aside>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {authPlayer.isGM && !gmUnlocked && (
+      {/* Main Content */}
+      <main className="il-main">
+        {/* Pinned Announcement Bar */}
+        <div className="il-gold-bar">
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            <Bell size={15} />
+            <span>{ws.announcement}</span>
+          </div>
+          {isAdmin && (
             <button
               type="button"
               className="il-btn"
-              style={{ padding: "8px 10px", fontSize: 11, color: "#fbbf24" }}
-              onClick={openGmUnlockPrompt}
-              title="Unlock Ganesh Mandir Cricket Club"
+              style={{ padding: "4px 9px", fontSize: 11, background: "#090d1e", color: "#fbbf24" }}
+              onClick={() => setTab("settings")}
             >
-              <Lock size={14} /> GM
+              Edit
             </button>
           )}
-          <button
-            type="button"
-            className="il-btn"
-            style={{ padding: "8px 10px" }}
-            onClick={() => setVoiceOutput((v) => !v)}
-            title="Toggle Voice"
-          >
-            {voiceOutput ? <Volume2 size={16} color="#34d399" /> : <VolumeX size={16} color="#94a3b8" />}
-          </button>
-          <button
-            type="button"
-            className="il-btn"
-            style={{ padding: "8px 10px", color: "#fb7185" }}
-            onClick={handleLogout}
-            title="Logout"
-          >
-            <LogOut size={16} />
-          </button>
         </div>
-      </header>
 
-      {/* Workspace Switcher Pill */}
-      {gmUnlocked && (
-        <div
-          style={{
-            display: "flex",
-            gap: 8,
-            marginBottom: 12,
-            background: "rgba(2, 6, 23, 0.72)",
-            padding: 6,
-            borderRadius: 14,
-            border: "1px solid var(--border)",
-          }}
-        >
-          <button
-            type="button"
-            className={"il-btn " + (workspace === "il" ? "il-btn-primary" : "")}
-            style={{ flex: 1, padding: "8px 10px", fontSize: 12 }}
-            onClick={() => setWorkspace("il")}
-          >
-            Indore Legends (13)
-          </button>
-          <button
-            type="button"
-            className={"il-btn " + (workspace === "gm" ? "il-btn-gold" : "")}
-            style={{ flex: 1, padding: "8px 10px", fontSize: 12 }}
-            onClick={() => setWorkspace("gm")}
-          >
-            Ganesh Mandir (8)
-          </button>
-        </div>
-      )}
-
-      {/* HOME TAB */}
-      {tab === "home" && (
-        <div>
-          <div className="il-card il-hero-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <PlayerAvatar
-                  playerId={activeUserInWs.id}
-                  name={activeUserInWs.name}
-                  size={56}
-                  rounded
-                  borderColor="#fbbf24"
-                />
-                <div>
-                  <div style={{ fontSize: 11, color: "var(--gold)", fontWeight: 800, letterSpacing: "0.08em" }}>
-                    TOGETHER WE RISE
-                  </div>
-                  <h2 style={{ margin: "3px 0 2px 0", fontSize: 21, fontWeight: 900 }}>
-                    Welcome back, {authPlayer.name.split(" ")[0]}
-                  </h2>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                    {ws.clubName} Dashboard
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
-                <button
-                  type="button"
-                  aria-label="Royal Blue Theme"
-                  className={"il-orb " + (state.theme === "blue" ? "selected" : "")}
-                  style={{ background: "linear-gradient(135deg, #0284c7, #1d4ed8)" }}
-                  onClick={() => setState((prev) => ({ ...prev, theme: "blue" }))}
-                />
-                <button
-                  type="button"
-                  aria-label="Championship Gold Theme"
-                  className={"il-orb " + (state.theme === "gold" ? "selected" : "")}
-                  style={{ background: "linear-gradient(135deg, #d97706, #fbbf24)" }}
-                  onClick={() => setState((prev) => ({ ...prev, theme: "gold" }))}
-                />
-                <button
-                  type="button"
-                  aria-label="Pitch Emerald Theme"
-                  className={"il-orb " + (state.theme === "emerald" ? "selected" : "")}
-                  style={{ background: "linear-gradient(135deg, #059669, #34d399)" }}
-                  onClick={() => setState((prev) => ({ ...prev, theme: "emerald" }))}
-                />
-              </div>
+        {/* Top Bar */}
+        <header className="il-header">
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div className="il-crest" onClick={handleCrestTap} title="Club Crest">
+              {workspace === "gm" ? "GM" : "IL"}
             </div>
-
-            <div className="il-grid-4 il-resp-2" style={{ marginTop: 14 }}>
-              <div style={{ background: "rgba(2,6,23,0.72)", padding: 12, borderRadius: 14, border: "1px solid var(--border)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>SQUAD SIZE</div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "var(--cyan)", marginTop: 3 }}>
-                  {ws.players.length}
-                </div>
-              </div>
-              <div style={{ background: "rgba(2,6,23,0.72)", padding: 12, borderRadius: 14, border: "1px solid var(--border)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>MATCHES</div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "var(--gold)", marginTop: 3 }}>
-                  {ws.matchHistory.length}
-                </div>
-              </div>
-              <div style={{ background: "rgba(2,6,23,0.72)", padding: 12, borderRadius: 14, border: "1px solid var(--border)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>CLUB FUND</div>
-                <div style={{ fontSize: 24, fontWeight: 900, color: "var(--emerald)", marginTop: 3 }}>
-                  Rs.{clubNetBalance}
-                </div>
-              </div>
-              <div style={{ background: "rgba(2,6,23,0.72)", padding: 12, borderRadius: 14, border: "1px solid var(--border)" }}>
-                <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>MY RUNS / WKTS</div>
-                <div style={{ fontSize: 22, fontWeight: 900, marginTop: 3 }}>
-                  {activeUserInWs.runs} / {activeUserInWs.wickets}
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="il-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-              <span className="il-pill" style={{ background: "rgba(251,191,36,0.2)", color: "#fde68a" }}>
-                <Flame size={13} /> {ws.scheduledMatch ? ws.scheduledMatch.title : "Official Launch Countdown"}
-              </span>
-              <span style={{ fontSize: 11, color: "var(--muted)", display: "inline-flex", alignItems: "center", gap: 4 }}>
-                <Clock size={13} />{" "}
-                {ws.scheduledMatch ? ws.scheduledMatch.dateTime.replace("T", " ") : "Nov 29, 2026 - 3:00 PM IST"}
-              </span>
-            </div>
-
-            <div className="il-grid-4" style={{ marginTop: 12 }}>
-              {[
-                { label: "DAYS", val: cdDays, color: "#38bdf8" },
-                { label: "HOURS", val: cdHours, color: "#fbbf24" },
-                { label: "MINS", val: cdMins, color: "#34d399" },
-                { label: "SECS", val: cdSecs, color: "#a78bfa" },
-              ].map((u) => (
-                <div
-                  key={u.label}
-                  style={{
-                    background: "rgba(2,6,23,0.78)",
-                    borderRadius: 12,
-                    padding: "11px 6px",
-                    textAlign: "center",
-                    borderBottom: "3px solid " + u.color,
-                  }}
-                >
-                  <div style={{ fontSize: 22, fontWeight: 900, fontVariantNumeric: "tabular-nums" }}>
-                    {u.val}
-                  </div>
-                  <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.1em", color: u.color }}>
-                    {u.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="il-grid-2" style={{ marginTop: 12 }}>
-              <button
-                type="button"
-                className="il-btn il-btn-gold"
-                onClick={() => {
-                  setTab("match");
-                  if (isAdmin && !ws.liveMatch) {
-                    requireAdminPin("Create New Match", () => setShowCreateWizard(true));
-                  }
-                }}
-              >
-                <Trophy size={15} /> {ws.liveMatch ? "Open Live Match" : isAdmin ? "Create Match" : "Match Center"}
-              </button>
-              <button
-                type="button"
-                className="il-btn il-btn-primary"
-                onClick={() => setTab("treasury")}
-              >
-                <Wallet size={15} /> Finance and Dues
-              </button>
-            </div>
-          </div>
-
-          <div
-            className="il-card"
-            style={{ cursor: "pointer" }}
-            onClick={() => setSelectedProfileId(activeUserInWs.id)}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                <PlayerAvatar playerId={activeUserInWs.id} name={activeUserInWs.name} size={50} />
-                <div>
-                  <div style={{ fontWeight: 900, fontSize: 16 }}>{activeUserInWs.name}</div>
-                  <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                    {activeUserInWs.role} - {activeUserInWs.funAward}
-                  </div>
-                </div>
-              </div>
-              <div style={{ textAlign: "right", fontSize: 12 }}>
-                <div>
-                  SR: <strong>{userSR}</strong> - Econ: <strong>{userEcon}</strong>
-                </div>
-                <div style={{ color: activeUserInWs.finesDue > 0 ? "var(--rose)" : "var(--emerald)", fontWeight: 700 }}>
-                  {activeUserInWs.finesDue > 0 ? "Due: Rs." + activeUserInWs.finesDue : "No Dues"} (Adv: Rs.{activeUserInWs.advanceCredit})
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="il-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
-              <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
-                <CheckCircle size={16} color="#34d399" /> Attendance Poll
-              </div>
-              <span style={{ fontSize: 12, color: "var(--muted)" }}>
-                {ws.poll.filter((v) => v.choice === "IN").length} IN /{" "}
-                {ws.poll.filter((v) => v.choice === "MAYBE").length} MAYBE /{" "}
-                {ws.poll.filter((v) => v.choice === "OUT").length} OUT
-              </span>
-            </div>
-
-            <div className="il-grid-3">
-              {(["IN", "MAYBE", "OUT"] as PollChoice[]).map((choice) => {
-                const activeCls =
-                  myPollVote === choice
-                    ? choice === "IN"
-                      ? "il-btn-emerald"
-                      : choice === "OUT"
-                      ? "il-btn-danger"
-                      : "il-btn-gold"
-                    : "";
-                return (
-                  <button
-                    key={choice}
-                    type="button"
-                    className={"il-btn " + activeCls}
-                    onClick={() => handleVotePoll(choice)}
-                  >
-                    {choice}
-                  </button>
-                );
-              })}
-            </div>
-
-            {ws.poll.length > 0 && (
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-                {ws.poll.map((v) => (
-                  <span
-                    key={v.playerId}
-                    className="il-pill"
-                    style={{
-                      background:
-                        v.choice === "IN"
-                          ? "rgba(52,211,153,0.16)"
-                          : v.choice === "OUT"
-                          ? "rgba(244,63,94,0.16)"
-                          : "rgba(251,191,36,0.16)",
-                      color: v.choice === "IN" ? "#6ee7b7" : v.choice === "OUT" ? "#fda4af" : "#fde68a",
-                    }}
-                  >
-                    {v.playerName.split(" ")[0]}: {v.choice}
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="il-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-              <div>
-                <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
-                  <MapPin size={16} color="#38bdf8" /> Ground Location
-                </div>
-                <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 3 }}>{ws.groundName}</div>
-              </div>
-              <a
-                href={ws.groundMapUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="il-btn il-btn-primary"
-                style={{ textDecoration: "none" }}
-              >
-                <MapPin size={15} /> Open Maps
-              </a>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* MATCH TAB */}
-      {tab === "match" && (
-        <div>
-          {!lm && (
             <div>
-              <div className="il-card il-hero-card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 11, color: "var(--gold)", fontWeight: 800 }}>{ws.clubName} MATCH CENTER</div>
-                    <h2 style={{ margin: "4px 0 0 0", fontSize: 20 }}>
-                      {ws.scheduledMatch ? ws.scheduledMatch.title : "No Scheduled Match Yet"}
-                    </h2>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
-                      Create a match, split teams, flip the coin, and start live ball-by-ball scoring.
-                    </div>
-                  </div>
-                  {isAdmin && (
-                    <button
-                      type="button"
-                      className="il-btn il-btn-gold"
-                      onClick={() =>
-                        requireAdminPin("Create New Match", () => setShowCreateWizard(true))
-                      }
-                    >
-                      <Plus size={16} /> Create Match
-                    </button>
-                  )}
-                </div>
-
-                {showCreateWizard && (
-                  <div
-                    style={{
-                      marginTop: 14,
-                      padding: 14,
-                      borderRadius: 14,
-                      background: "rgba(2,6,23,0.88)",
-                      border: "1px solid var(--border)",
-                      display: "grid",
-                      gap: 10,
-                    }}
-                  >
-                    <div style={{ fontWeight: 800, color: "var(--gold)" }}>Create Match Wizard</div>
-                    <input
-                      className="il-input"
-                      value={wizTitle}
-                      onChange={(e) => setWizTitle(e.target.value)}
-                      placeholder="Match Title"
-                    />
-                    <div className="il-grid-2">
-                      <input
-                        className="il-input"
-                        type="datetime-local"
-                        value={wizDateTime}
-                        onChange={(e) => setWizDateTime(e.target.value)}
-                      />
-                      <select
-                        className="il-select"
-                        value={wizOvers}
-                        onChange={(e) => setWizOvers(Number(e.target.value))}
-                      >
-                        {[4, 5, 6, 8, 10, 12, 15, 20].map((ov) => (
-                          <option key={ov} value={ov}>
-                            {ov} Overs
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="il-grid-2">
-                      <input
-                        className="il-input"
-                        value={wizTeamAName}
-                        onChange={(e) => setWizTeamAName(e.target.value)}
-                        placeholder="Team A Name"
-                      />
-                      <input
-                        className="il-input"
-                        value={wizTeamBName}
-                        onChange={(e) => setWizTeamBName(e.target.value)}
-                        placeholder="Team B Name"
-                      />
-                    </div>
-
-                    <div>
-                      <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 6 }}>
-                        Select Playing Squad ({wizSelectedIds.length} selected - min 4):
-                      </div>
-                      <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {ws.players.map((p) => {
-                          const picked = wizSelectedIds.includes(p.id);
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              className={"il-btn " + (picked ? "il-btn-primary" : "")}
-                              style={{ padding: "6px 10px", fontSize: 12 }}
-                              onClick={() =>
-                                setWizSelectedIds((prev) =>
-                                  prev.includes(p.id)
-                                    ? prev.filter((id) => id !== p.id)
-                                    : [...prev, p.id]
-                                )
-                              }
-                            >
-                              {p.name.split(" ")[0]}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    <div style={{ display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        disabled={wizSelectedIds.length < 4}
-                        className="il-btn il-btn-gold"
-                        onClick={createScheduledMatch}
-                      >
-                        <Shuffle size={15} /> Create and Split Teams
-                      </button>
-                      <button type="button" className="il-btn" onClick={() => setShowCreateWizard(false)}>
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
+              <div style={{ fontWeight: 900, fontSize: 16, letterSpacing: "0.03em", color: "#fde68a" }}>
+                {ws.clubName}
+              </div>
+              <div style={{ fontSize: 11, color: "var(--muted)", display: "flex", alignItems: "center", gap: 6 }}>
+                <span>{authPlayer.name}</span>
+                {isAdmin && (
+                  <span className="il-pill" style={{ background: "rgba(251,191,36,0.22)", color: "#fbbf24", padding: "2px 7px" }}>
+                    ADMIN
+                  </span>
                 )}
               </div>
+            </div>
+          </div>
 
-              {ws.scheduledMatch && (
-                <div className="il-card">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <button
+              type="button"
+              className="il-btn il-btn-gold"
+              style={{ padding: "7px 10px", fontSize: 11 }}
+              onClick={() => {
+                setSelectedProfileId(activeUserInWs.id);
+                setProfileTab("idcard");
+              }}
+              title="Open My Digital ID Card"
+            >
+              <CreditCard size={14} /> My ID
+            </button>
+            {authPlayer.isGM && !gmUnlocked && (
+              <button
+                type="button"
+                className="il-btn"
+                style={{ padding: "7px 9px", fontSize: 11, color: "#fbbf24" }}
+                onClick={openGmUnlockPrompt}
+              >
+                <Lock size={13} /> GM
+              </button>
+            )}
+            <button
+              type="button"
+              className="il-btn"
+              style={{ padding: "8px 9px" }}
+              onClick={() => setVoiceOutput((v) => !v)}
+              title="Toggle Voice"
+            >
+              {voiceOutput ? <Volume2 size={16} color="#34d399" /> : <VolumeX size={16} color="#94a3b8" />}
+            </button>
+            <button
+              type="button"
+              className="il-btn"
+              style={{ padding: "8px 9px", color: "#fb7185" }}
+              onClick={handleLogout}
+              title="Logout"
+            >
+              <LogOut size={16} />
+            </button>
+          </div>
+        </header>
+
+        {/* Workspace Switcher Pill */}
+        {gmUnlocked && (
+          <div
+            style={{
+              display: "flex",
+              gap: 8,
+              marginBottom: 12,
+              background: "rgba(2, 6, 23, 0.72)",
+              padding: 6,
+              borderRadius: 14,
+              border: "1px solid var(--border)",
+            }}
+          >
+            <button
+              type="button"
+              className={"il-btn " + (workspace === "il" ? "il-btn-primary" : "")}
+              style={{ flex: 1, padding: "8px 10px", fontSize: 12 }}
+              onClick={() => setWorkspace("il")}
+            >
+              Indore Legends ({state.workspaces.il.players.length})
+            </button>
+            <button
+              type="button"
+              className={"il-btn " + (workspace === "gm" ? "il-btn-gold" : "")}
+              style={{ flex: 1, padding: "8px 10px", fontSize: 12 }}
+              onClick={() => setWorkspace("gm")}
+            >
+              Ganesh Mandir ({state.workspaces.gm.players.length})
+            </button>
+          </div>
+        )}
+
+        {/* DASHBOARD / HOME TAB */}
+        {tab === "home" && (
+          <div>
+            {/* Stadium Hero Banner */}
+            <div className="il-card il-hero-banner">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <PlayerAvatar
+                    playerId={activeUserInWs.id}
+                    name={activeUserInWs.name}
+                    size={58}
+                    rounded
+                    borderColor="#fbbf24"
+                  />
+                  <div>
+                    <div style={{ fontSize: 10, color: "var(--gold)", fontWeight: 900, letterSpacing: "0.12em" }}>
+                      PLAY • MANAGE • WIN
+                    </div>
+                    <h2 style={{ margin: "3px 0 2px 0", fontSize: 22, fontWeight: 900 }}>
+                      Welcome back, {authPlayer.name.split(" ")[0]}!
+                    </h2>
+                    <div style={{ fontSize: 12, color: "#cbd5e1" }}>
+                      ID: <strong>{playerClubIdCode(workspace, activeUserInWs)}</strong> • Jersey #{activeUserInWs.jerseyNo}
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                  <button
+                    type="button"
+                    className="il-btn il-btn-gold"
+                    style={{ padding: "8px 12px", fontSize: 12 }}
+                    onClick={() => {
+                      setSelectedProfileId(activeUserInWs.id);
+                      setProfileTab("idcard");
+                    }}
+                  >
+                    <CreditCard size={15} /> My Digital ID Card
+                  </button>
+
+                  {/* 3-Orb Theme Switcher */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 7, background: "rgba(2,6,23,0.65)", padding: "6px 10px", borderRadius: 999, border: "1px solid var(--border)" }}>
+                    <span style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>THEME</span>
+                    <button
+                      type="button"
+                      aria-label="Royal Blue Theme"
+                      className={"il-orb " + (state.theme === "blue" ? "selected" : "")}
+                      style={{ background: "linear-gradient(135deg, #0284c7, #1d4ed8)" }}
+                      onClick={() => setState((prev) => ({ ...prev, theme: "blue" }))}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Championship Gold Theme"
+                      className={"il-orb " + (state.theme === "gold" ? "selected" : "")}
+                      style={{ background: "linear-gradient(135deg, #d97706, #fbbf24)" }}
+                      onClick={() => setState((prev) => ({ ...prev, theme: "gold" }))}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Pitch Emerald Theme"
+                      className={"il-orb " + (state.theme === "emerald" ? "selected" : "")}
+                      style={{ background: "linear-gradient(135deg, #059669, #34d399)" }}
+                      onClick={() => setState((prev) => ({ ...prev, theme: "emerald" }))}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* 4 KPI Strip */}
+              <div className="il-grid-4 il-resp-2" style={{ marginTop: 14 }}>
+                <div className="il-kpi">
+                  <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>TOTAL PLAYERS</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: "#38bdf8", marginTop: 3 }}>
+                    {ws.players.length}
+                  </div>
+                </div>
+                <div className="il-kpi">
+                  <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>MATCHES</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: "#fbbf24", marginTop: 3 }}>
+                    {ws.matchHistory.length}
+                  </div>
+                </div>
+                <div className="il-kpi">
+                  <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>WIN RATE</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: "#34d399", marginTop: 3 }}>
+                    {winRate}%
+                  </div>
+                </div>
+                <div className="il-kpi">
+                  <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>CLUB FUND</div>
+                  <div style={{ fontSize: 24, fontWeight: 900, color: "#a78bfa", marginTop: 3 }}>
+                    Rs.{clubNetBalance}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Upcoming Match + Quick Actions + Team Performance */}
+            <div className="il-grid-2 il-resp-1" style={{ marginBottom: 12 }}>
+              <div className="il-card" style={{ marginBottom: 0 }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                  <span style={{ fontWeight: 900, fontSize: 15, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Clock size={16} color="#fbbf24" /> Upcoming Match
+                  </span>
+                  <button
+                    type="button"
+                    className="il-btn"
+                    style={{ padding: "4px 9px", fontSize: 11 }}
+                    onClick={() => setTab("match")}
+                  >
+                    View All
+                  </button>
+                </div>
+
+                <div style={{ fontWeight: 900, fontSize: 17, color: "#fde68a" }}>
+                  {ws.scheduledMatch ? ws.scheduledMatch.title : "Season Launch Countdown"}
+                </div>
+                <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 3 }}>
+                  {ws.scheduledMatch
+                    ? ws.scheduledMatch.teamAName + " vs " + ws.scheduledMatch.teamBName + " • " + ws.scheduledMatch.overs + " Overs"
+                    : "Nov 29, 2026 • 3:00 PM IST • " + ws.groundName}
+                </div>
+
+                <div className="il-grid-4" style={{ marginTop: 12 }}>
+                  {[
+                    { label: "DAYS", val: cdDays },
+                    { label: "HRS", val: cdHours },
+                    { label: "MIN", val: cdMins },
+                    { label: "SEC", val: cdSecs },
+                  ].map((u) => (
+                    <div
+                      key={u.label}
+                      style={{
+                        background: "rgba(2,6,23,0.82)",
+                        border: "1px solid rgba(251,191,36,0.3)",
+                        borderRadius: 12,
+                        padding: "9px 4px",
+                        textAlign: "center",
+                      }}
+                    >
+                      <div style={{ fontSize: 20, fontWeight: 900, fontVariantNumeric: "tabular-nums" }}>{u.val}</div>
+                      <div style={{ fontSize: 9, color: "var(--gold)", fontWeight: 800 }}>{u.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                <button
+                  type="button"
+                  className="il-btn il-btn-gold"
+                  style={{ width: "100%", marginTop: 12 }}
+                  onClick={() => setTab("match")}
+                >
+                  {ws.liveMatch ? "Open Live Match" : "Open Match Center"}
+                </button>
+              </div>
+
+              <div style={{ display: "grid", gap: 12 }}>
+                <div className="il-card" style={{ marginBottom: 0 }}>
+                  <div style={{ fontWeight: 900, fontSize: 15, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Sparkles size={15} color="#fbbf24" /> Quick Actions
+                  </div>
+                  <div className="il-grid-2">
+                    <button
+                      type="button"
+                      className="il-btn"
+                      onClick={() => {
+                        if (isAdmin) {
+                          setShowAddPlayerModal(true);
+                        } else {
+                          setTab("squad");
+                        }
+                      }}
+                    >
+                      <UserPlus size={15} color="#38bdf8" /> {isAdmin ? "Add Player" : "View Squad"}
+                    </button>
+                    <button
+                      type="button"
+                      className="il-btn"
+                      onClick={() => {
+                        setTab("match");
+                        if (isAdmin && !ws.liveMatch) {
+                          setShowCreateWizard(true);
+                        }
+                      }}
+                    >
+                      <Trophy size={15} color="#fbbf24" /> Create Match
+                    </button>
+                    <button
+                      type="button"
+                      className="il-btn"
+                      onClick={() => {
+                        setSelectedProfileId(activeUserInWs.id);
+                        setProfileTab("idcard");
+                      }}
+                    >
+                      <CreditCard size={15} color="#34d399" /> Digital ID
+                    </button>
+                    <button
+                      type="button"
+                      className="il-btn"
+                      onClick={() => setTab("treasury")}
+                    >
+                      <Wallet size={15} color="#a78bfa" /> Finance
+                    </button>
+                  </div>
+                </div>
+
+                <div className="il-card" style={{ marginBottom: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontWeight: 900, fontSize: 14 }}>Team Performance</span>
+                    <span style={{ fontSize: 11, color: "var(--gold)", fontWeight: 700 }}>
+                      MVP: {mvpLeader.name.split(" ")[0]} ({mvpLeader.mvpPoints} pts)
+                    </span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                    <svg width="90" height="90" viewBox="0 0 90 90">
+                      <circle cx="45" cy="45" r={winDonutRadius} fill="none" stroke="rgba(148,163,184,0.18)" strokeWidth="10" />
+                      <circle
+                        cx="45"
+                        cy="45"
+                        r={winDonutRadius}
+                        fill="none"
+                        stroke="#fbbf24"
+                        strokeWidth="10"
+                        strokeDasharray={winDonutDash + " " + winDonutCirc}
+                        transform="rotate(-90 45 45)"
+                      />
+                      <text x="45" y="49" textAnchor="middle" fill="#ffffff" fontSize="15" fontWeight="900">
+                        {winRate}%
+                      </text>
+                    </svg>
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginBottom: 6 }}>Last 5 Matches</div>
+                      <div style={{ display: "flex", gap: 6 }}>
+                        {ws.matchHistory.length === 0 ? (
+                          <span style={{ fontSize: 12, color: "var(--muted)" }}>No matches played yet.</span>
+                        ) : (
+                          ws.matchHistory.slice(0, 5).map((h) => (
+                            <span
+                              key={h.id}
+                              style={{
+                                width: 26,
+                                height: 26,
+                                borderRadius: "50%",
+                                display: "inline-flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                fontSize: 11,
+                                fontWeight: 900,
+                                background:
+                                  h.wonFlag === "W"
+                                    ? "rgba(52,211,153,0.25)"
+                                    : h.wonFlag === "L"
+                                    ? "rgba(244,63,94,0.25)"
+                                    : "rgba(251,191,36,0.25)",
+                                color:
+                                  h.wonFlag === "W"
+                                    ? "#34d399"
+                                    : h.wonFlag === "L"
+                                    ? "#fb7185"
+                                    : "#fbbf24",
+                              }}
+                            >
+                              {h.wonFlag}
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Attendance Poll */}
+            <div className="il-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+                <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
+                  <CheckCircle size={16} color="#34d399" /> Next Match Attendance Poll
+                </div>
+                <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                  {ws.poll.filter((v) => v.choice === "IN").length} IN /{" "}
+                  {ws.poll.filter((v) => v.choice === "MAYBE").length} MAYBE /{" "}
+                  {ws.poll.filter((v) => v.choice === "OUT").length} OUT
+                </span>
+              </div>
+
+              <div className="il-grid-3">
+                {(["IN", "MAYBE", "OUT"] as PollChoice[]).map((choice) => {
+                  const activeCls =
+                    myPollVote === choice
+                      ? choice === "IN"
+                        ? "il-btn-emerald"
+                        : choice === "OUT"
+                        ? "il-btn-danger"
+                        : "il-btn-gold"
+                      : "";
+                  return (
+                    <button
+                      key={choice}
+                      type="button"
+                      className={"il-btn " + activeCls}
+                      onClick={() => handleVotePoll(choice)}
+                    >
+                      {choice}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {ws.poll.length > 0 && (
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+                  {ws.poll.map((v) => (
+                    <span
+                      key={v.playerId}
+                      className="il-pill"
+                      style={{
+                        background:
+                          v.choice === "IN"
+                            ? "rgba(52,211,153,0.16)"
+                            : v.choice === "OUT"
+                            ? "rgba(244,63,94,0.16)"
+                            : "rgba(251,191,36,0.16)",
+                        color: v.choice === "IN" ? "#6ee7b7" : v.choice === "OUT" ? "#fda4af" : "#fde68a",
+                      }}
+                    >
+                      {v.playerName.split(" ")[0]}: {v.choice}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Ground Location */}
+            <div className="il-card">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
+                <div>
+                  <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
+                    <MapPin size={16} color="#38bdf8" /> Ground Direction
+                  </div>
+                  <div style={{ fontSize: 13, color: "var(--muted)", marginTop: 3 }}>{ws.groundName}</div>
+                </div>
+                <a
+                  href={ws.groundMapUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="il-btn il-btn-primary"
+                  style={{ textDecoration: "none" }}
+                >
+                  <MapPin size={15} /> Open Maps
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* MATCHES & LIVE SCORER TAB */}
+        {tab === "match" && (
+          <div>
+            {!lm && (
+              <div>
+                <div className="il-card il-hero-banner">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 10 }}>
                     <div>
-                      <span className="il-pill" style={{ background: "rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
-                        {ws.scheduledMatch.overs} Overs - {ws.scheduledMatch.dateTime.replace("T", " ")}
-                      </span>
-                      <h3 style={{ margin: "6px 0 0 0" }}>Teams and Captains</h3>
+                      <div style={{ fontSize: 11, color: "var(--gold)", fontWeight: 800 }}>{ws.clubName} MATCH CENTER</div>
+                      <h2 style={{ margin: "4px 0 0 0", fontSize: 20 }}>
+                        {ws.scheduledMatch ? ws.scheduledMatch.title : "No Scheduled Match Yet"}
+                      </h2>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                        Use the Auto Team Selector to split teams fairly, flip the coin, and score live.
+                      </div>
                     </div>
                     {isAdmin && (
                       <button
                         type="button"
-                        className="il-btn"
-                        style={{ fontSize: 12 }}
-                        onClick={reRollScheduledTeams}
+                        className="il-btn il-btn-gold"
+                        onClick={() => setShowCreateWizard((v) => !v)}
                       >
-                        <Shuffle size={14} /> Auto-Shuffle C / VC
+                        <Plus size={16} /> Create Match
                       </button>
                     )}
                   </div>
 
-                  <div className="il-grid-2 il-resp-1" style={{ marginTop: 12 }}>
-                    <div style={{ background: "rgba(2,6,23,0.75)", padding: 12, borderRadius: 12, border: "1px solid rgba(56,189,248,0.35)" }}>
-                      <div style={{ fontWeight: 900, color: "var(--cyan)" }}>{ws.scheduledMatch.teamAName}</div>
-                      <div style={{ fontSize: 12, color: "var(--gold)", marginTop: 4 }}>
-                        C: {ws.scheduledMatch.teamACaptain} / VC: {ws.scheduledMatch.teamAViceCaptain}
-                      </div>
-                      <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {ws.players
-                          .filter((p) => ws.scheduledMatch?.teamAIds.includes(p.id))
-                          .map((p) => (
-                            <button
-                              key={p.id}
-                              type="button"
-                              disabled={!isAdmin}
-                              className="il-btn"
-                              style={{ padding: "4px 9px", fontSize: 11 }}
-                              onClick={() => swapPlayerTeam(p.id)}
-                              title="Tap to swap team"
-                            >
-                              {p.name.split(" ")[0]}
-                            </button>
+                  {showCreateWizard && isAdmin && (
+                    <div
+                      style={{
+                        marginTop: 14,
+                        padding: 14,
+                        borderRadius: 14,
+                        background: "rgba(2,6,23,0.9)",
+                        border: "1px solid var(--border)",
+                        display: "grid",
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ fontWeight: 800, color: "var(--gold)" }}>Create Match + Auto Team Selector</div>
+                      <input
+                        className="il-input"
+                        value={wizTitle}
+                        onChange={(e) => setWizTitle(e.target.value)}
+                        placeholder="Match Title"
+                      />
+                      <div className="il-grid-2">
+                        <input
+                          className="il-input"
+                          type="datetime-local"
+                          value={wizDateTime}
+                          onChange={(e) => setWizDateTime(e.target.value)}
+                        />
+                        <select
+                          className="il-select"
+                          value={wizOvers}
+                          onChange={(e) => setWizOvers(Number(e.target.value))}
+                        >
+                          {[2, 4, 5, 6, 8, 10, 12, 15, 20].map((ov) => (
+                            <option key={ov} value={ov}>
+                              {ov} Overs
+                            </option>
                           ))}
+                        </select>
                       </div>
-                    </div>
+                      <div className="il-grid-2">
+                        <input
+                          className="il-input"
+                          value={wizTeamAName}
+                          onChange={(e) => setWizTeamAName(e.target.value)}
+                          placeholder="Team A Name"
+                        />
+                        <input
+                          className="il-input"
+                          value={wizTeamBName}
+                          onChange={(e) => setWizTeamBName(e.target.value)}
+                          placeholder="Team B Name"
+                        />
+                      </div>
 
-                    <div style={{ background: "rgba(2,6,23,0.75)", padding: 12, borderRadius: 12, border: "1px solid rgba(251,191,36,0.35)" }}>
-                      <div style={{ fontWeight: 900, color: "var(--gold)" }}>{ws.scheduledMatch.teamBName}</div>
-                      <div style={{ fontSize: 12, color: "var(--cyan)", marginTop: 4 }}>
-                        C: {ws.scheduledMatch.teamBCaptain} / VC: {ws.scheduledMatch.teamBViceCaptain}
-                      </div>
-                      <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
-                        {ws.players
-                          .filter((p) => ws.scheduledMatch?.teamBIds.includes(p.id))
-                          .map((p) => (
+                      <div>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+                          <span style={{ fontSize: 12, color: "var(--muted)" }}>
+                            Playing Squad ({wizSelectedIds.length} selected - min 4)
+                          </span>
+                          <div style={{ display: "flex", gap: 6 }}>
                             <button
-                              key={p.id}
                               type="button"
-                              disabled={!isAdmin}
                               className="il-btn"
-                              style={{ padding: "4px 9px", fontSize: 11 }}
-                              onClick={() => swapPlayerTeam(p.id)}
-                              title="Tap to swap team"
+                              style={{ padding: "4px 8px", fontSize: 11 }}
+                              onClick={() => setWizSelectedIds(ws.players.map((p) => p.id))}
                             >
-                              {p.name.split(" ")[0]}
+                              Select All
                             </button>
-                          ))}
+                            <button
+                              type="button"
+                              className="il-btn il-btn-emerald"
+                              style={{ padding: "4px 8px", fontSize: 11 }}
+                              onClick={() => {
+                                const inIds = ws.poll.filter((v) => v.choice === "IN").map((v) => v.playerId);
+                                if (inIds.length >= 4) setWizSelectedIds(inIds);
+                              }}
+                            >
+                              Auto-Pick Poll IN
+                            </button>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {ws.players.map((p) => {
+                            const picked = wizSelectedIds.includes(p.id);
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                className={"il-btn " + (picked ? "il-btn-primary" : "")}
+                                style={{ padding: "6px 10px", fontSize: 12 }}
+                                onClick={() =>
+                                  setWizSelectedIds((prev) =>
+                                    prev.includes(p.id)
+                                      ? prev.filter((id) => id !== p.id)
+                                      : [...prev, p.id]
+                                  )
+                                }
+                              >
+                                #{p.jerseyNo} {p.name.split(" ")[0]}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  </div>
-                  {isAdmin && (
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
-                      Tip: Tap any player chip above to move them to the other team.
+
+                      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                        <button
+                          type="button"
+                          disabled={wizSelectedIds.length < 4}
+                          className="il-btn il-btn-gold"
+                          onClick={() => createScheduledMatch(false)}
+                        >
+                          <Shuffle size={15} /> Auto-Select Fair Teams (MVP)
+                        </button>
+                        <button
+                          type="button"
+                          disabled={wizSelectedIds.length < 4}
+                          className="il-btn il-btn-primary"
+                          onClick={() => createScheduledMatch(true)}
+                        >
+                          <Shuffle size={15} /> Random Auto-Select
+                        </button>
+                        <button type="button" className="il-btn" onClick={() => setShowCreateWizard(false)}>
+                          Cancel
+                        </button>
+                      </div>
                     </div>
                   )}
+                </div>
 
-                  <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "rgba(2,6,23,0.72)", border: "1px solid var(--border)" }}>
+                {ws.scheduledMatch && (
+                  <div className="il-card">
                     <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                      <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
-                        <Coins size={16} color="#fbbf24" className={coinFlipping ? "il-coin-spin" : ""} /> Digital Coin Toss
+                      <div>
+                        <span className="il-pill" style={{ background: "rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
+                          {ws.scheduledMatch.overs} Overs - {ws.scheduledMatch.dateTime.replace("T", " ")}
+                        </span>
+                        <h3 style={{ margin: "6px 0 0 0" }}>Auto Team Selector & Captains</h3>
                       </div>
-                      <button
-                        type="button"
-                        className="il-btn il-btn-gold"
-                        disabled={coinFlipping}
-                        onClick={flipCoin}
-                      >
-                        {coinFlipping ? "Flipping..." : "Flip Coin"}
-                      </button>
-                    </div>
-                    {(coinResult || ws.scheduledMatch.tossWinner) && (
-                      <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
-                        <div style={{ fontSize: 13 }}>
-                          Coin: <strong style={{ color: "var(--gold)" }}>{coinResult || "DONE"}</strong> - Winner:{" "}
-                          <strong style={{ color: "var(--cyan)" }}>{ws.scheduledMatch.tossWinner}</strong>
+                      {isAdmin && (
+                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                          <button
+                            type="button"
+                            className="il-btn il-btn-gold"
+                            style={{ fontSize: 11, padding: "6px 10px" }}
+                            onClick={() => autoSelectScheduledTeams(false)}
+                          >
+                            <Shuffle size={13} /> Fair Split
+                          </button>
+                          <button
+                            type="button"
+                            className="il-btn il-btn-primary"
+                            style={{ fontSize: 11, padding: "6px 10px" }}
+                            onClick={() => autoSelectScheduledTeams(true)}
+                          >
+                            <Shuffle size={13} /> Random Split
+                          </button>
                         </div>
-                        <div style={{ display: "flex", gap: 6 }}>
-                          {(["BAT", "BOWL"] as const).map((dec) => (
-                            <button
-                              key={dec}
-                              type="button"
-                              className={"il-btn " + (ws.scheduledMatch?.tossDecision === dec ? "il-btn-emerald" : "")}
-                              style={{ padding: "6px 12px", fontSize: 12 }}
-                              onClick={() =>
+                      )}
+                    </div>
+
+                    <div className="il-grid-2 il-resp-1" style={{ marginTop: 12 }}>
+                      <div style={{ background: "rgba(2,6,23,0.75)", padding: 12, borderRadius: 12, border: "1px solid rgba(56,189,248,0.35)" }}>
+                        <div style={{ fontWeight: 900, color: "var(--cyan)" }}>{ws.scheduledMatch.teamAName}</div>
+                        <div style={{ fontSize: 12, color: "var(--gold)", marginTop: 4 }}>
+                          C: {ws.scheduledMatch.teamACaptain} / VC: {ws.scheduledMatch.teamAViceCaptain}
+                        </div>
+                        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {ws.players
+                            .filter((p) => ws.scheduledMatch?.teamAIds.includes(p.id))
+                            .map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                disabled={!isAdmin}
+                                className="il-btn"
+                                style={{ padding: "5px 9px", fontSize: 11 }}
+                                onClick={() => swapPlayerTeam(p.id)}
+                                title="Tap to swap team"
+                              >
+                                #{p.jerseyNo} {p.name.split(" ")[0]}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+
+                      <div style={{ background: "rgba(2,6,23,0.75)", padding: 12, borderRadius: 12, border: "1px solid rgba(251,191,36,0.35)" }}>
+                        <div style={{ fontWeight: 900, color: "var(--gold)" }}>{ws.scheduledMatch.teamBName}</div>
+                        <div style={{ fontSize: 12, color: "var(--cyan)", marginTop: 4 }}>
+                          C: {ws.scheduledMatch.teamBCaptain} / VC: {ws.scheduledMatch.teamBViceCaptain}
+                        </div>
+                        <div style={{ marginTop: 8, display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {ws.players
+                            .filter((p) => ws.scheduledMatch?.teamBIds.includes(p.id))
+                            .map((p) => (
+                              <button
+                                key={p.id}
+                                type="button"
+                                disabled={!isAdmin}
+                                className="il-btn"
+                                style={{ padding: "5px 9px", fontSize: 11 }}
+                                onClick={() => swapPlayerTeam(p.id)}
+                                title="Tap to swap team"
+                              >
+                                #{p.jerseyNo} {p.name.split(" ")[0]}
+                              </button>
+                            ))}
+                        </div>
+                      </div>
+                    </div>
+                    {isAdmin && (
+                      <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 6 }}>
+                        Tap any player chip above to manually move them to the opposite team.
+                      </div>
+                    )}
+
+                    {/* Coin Toss */}
+                    <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "rgba(2,6,23,0.72)", border: "1px solid var(--border)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                        <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
+                          <Coins size={16} color="#fbbf24" className={coinFlipping ? "il-coin-spin" : ""} /> Digital Coin Toss
+                        </div>
+                        <button
+                          type="button"
+                          className="il-btn il-btn-gold"
+                          disabled={coinFlipping}
+                          onClick={flipCoin}
+                        >
+                          {coinFlipping ? "Flipping..." : "Flip Coin"}
+                        </button>
+                      </div>
+                      {(coinResult || ws.scheduledMatch.tossWinner) && (
+                        <div style={{ marginTop: 10, display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 8 }}>
+                          <div style={{ fontSize: 13 }}>
+                            Coin: <strong style={{ color: "var(--gold)" }}>{coinResult || "DONE"}</strong> - Winner:{" "}
+                            <strong style={{ color: "var(--cyan)" }}>{ws.scheduledMatch.tossWinner}</strong>
+                          </div>
+                          <div style={{ display: "flex", gap: 6 }}>
+                            {(["BAT", "BOWL"] as const).map((dec) => (
+                              <button
+                                key={dec}
+                                type="button"
+                                className={"il-btn " + (ws.scheduledMatch?.tossDecision === dec ? "il-btn-emerald" : "")}
+                                style={{ padding: "6px 12px", fontSize: 12 }}
+                                onClick={() =>
+                                  updateWorkspace((prevWs) =>
+                                    prevWs.scheduledMatch
+                                      ? { ...prevWs, scheduledMatch: { ...prevWs.scheduledMatch, tossDecision: dec } }
+                                      : prevWs
+                                  )
+                                }
+                              >
+                                Choose {dec}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Checklist */}
+                    <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "rgba(2,6,23,0.72)", border: "1px solid var(--border)" }}>
+                      <div style={{ fontWeight: 800, marginBottom: 8 }}>Match Day Checklist</div>
+                      <div style={{ display: "grid", gap: 6 }}>
+                        {ws.scheduledMatch.checklist.map((item) => (
+                          <label
+                            key={item.id}
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              fontSize: 13,
+                              cursor: "pointer",
+                              textDecoration: item.done ? "line-through" : "none",
+                              color: item.done ? "var(--emerald)" : "var(--text)",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={item.done}
+                              onChange={() =>
                                 updateWorkspace((prevWs) =>
                                   prevWs.scheduledMatch
-                                    ? { ...prevWs, scheduledMatch: { ...prevWs.scheduledMatch, tossDecision: dec } }
+                                    ? {
+                                        ...prevWs,
+                                        scheduledMatch: {
+                                          ...prevWs.scheduledMatch,
+                                          checklist: prevWs.scheduledMatch.checklist.map((c) =>
+                                            c.id === item.id ? { ...c, done: !c.done } : c
+                                          ),
+                                        },
+                                      }
                                     : prevWs
                                 )
                               }
-                            >
-                              Choose {dec}
-                            </button>
-                          ))}
-                        </div>
+                            />
+                            {item.label}
+                          </label>
+                        ))}
+                      </div>
+                      <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
+                        <input
+                          className="il-input"
+                          placeholder="Add checklist item..."
+                          value={newChecklistLabel}
+                          onChange={(e) => setNewChecklistLabel(e.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="il-btn"
+                          onClick={() => {
+                            if (!newChecklistLabel.trim()) return;
+                            updateWorkspace((prevWs) =>
+                              prevWs.scheduledMatch
+                                ? {
+                                    ...prevWs,
+                                    scheduledMatch: {
+                                      ...prevWs.scheduledMatch,
+                                      checklist: [
+                                        ...prevWs.scheduledMatch.checklist,
+                                        { id: uid("chk"), label: newChecklistLabel.trim(), done: false },
+                                      ],
+                                    },
+                                  }
+                                : prevWs
+                            );
+                            setNewChecklistLabel("");
+                          }}
+                        >
+                          <Plus size={15} />
+                        </button>
+                      </div>
+                    </div>
+
+                    {isAdmin && (
+                      <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
+                        <button
+                          type="button"
+                          className="il-btn il-btn-emerald"
+                          style={{ flex: 1, padding: 13 }}
+                          onClick={startLiveMatchFromScheduled}
+                        >
+                          <Play size={16} /> Start Live Match
+                        </button>
+                        <button
+                          type="button"
+                          className="il-btn il-btn-danger"
+                          onClick={() =>
+                            requireAdminPin("Cancel Scheduled Match", () =>
+                              updateWorkspace((prevWs) => ({ ...prevWs, scheduledMatch: null }))
+                            )
+                          }
+                        >
+                          <Trash2 size={15} />
+                        </button>
                       </div>
                     )}
                   </div>
+                )}
 
-                  <div style={{ marginTop: 14, padding: 12, borderRadius: 12, background: "rgba(2,6,23,0.72)", border: "1px solid var(--border)" }}>
-                    <div style={{ fontWeight: 800, marginBottom: 8 }}>Match Day Checklist</div>
-                    <div style={{ display: "grid", gap: 6 }}>
-                      {ws.scheduledMatch.checklist.map((item) => (
-                        <label
-                          key={item.id}
+                <div className="il-card">
+                  <div style={{ fontWeight: 800, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                    <Trophy size={16} color="#fbbf24" /> Completed Matches ({ws.matchHistory.length})
+                  </div>
+                  {ws.matchHistory.length === 0 ? (
+                    <div style={{ fontSize: 13, color: "var(--muted)" }}>
+                      No matches played yet. Finished matches will appear here with MVP and WhatsApp scorecard links.
+                    </div>
+                  ) : (
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {ws.matchHistory.map((h) => (
+                        <div
+                          key={h.id}
                           style={{
+                            padding: 12,
+                            borderRadius: 12,
+                            background: "rgba(2,6,23,0.72)",
+                            border: "1px solid var(--border)",
                             display: "flex",
+                            justifyContent: "space-between",
                             alignItems: "center",
+                            flexWrap: "wrap",
                             gap: 8,
-                            fontSize: 13,
-                            cursor: "pointer",
-                            textDecoration: item.done ? "line-through" : "none",
-                            color: item.done ? "var(--emerald)" : "var(--text)",
                           }}
                         >
-                          <input
-                            type="checkbox"
-                            checked={item.done}
-                            onChange={() =>
-                              updateWorkspace((prevWs) =>
-                                prevWs.scheduledMatch
-                                  ? {
-                                      ...prevWs,
-                                      scheduledMatch: {
-                                        ...prevWs.scheduledMatch,
-                                        checklist: prevWs.scheduledMatch.checklist.map((c) =>
-                                          c.id === item.id ? { ...c, done: !c.done } : c
-                                        ),
-                                      },
-                                    }
-                                  : prevWs
-                              )
-                            }
-                          />
-                          {item.label}
-                        </label>
+                          <div>
+                            <div style={{ fontWeight: 800 }}>{h.title}</div>
+                            <div style={{ fontSize: 12, color: "var(--cyan)" }}>{h.summary}</div>
+                            <div style={{ fontSize: 12, color: "var(--gold)" }}>
+                              {h.winner} - MVP: {h.mvp} ({h.date})
+                            </div>
+                          </div>
+                          <a
+                            href={"https://wa.me/?text=" + encodeURIComponent(h.scorecardText)}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="il-btn il-btn-emerald"
+                            style={{ textDecoration: "none", padding: "7px 10px", fontSize: 12 }}
+                          >
+                            <Share2 size={14} /> WhatsApp
+                          </a>
+                        </div>
                       ))}
-                    </div>
-                    <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                      <input
-                        className="il-input"
-                        placeholder="Add checklist item..."
-                        value={newChecklistLabel}
-                        onChange={(e) => setNewChecklistLabel(e.target.value)}
-                      />
-                      <button
-                        type="button"
-                        className="il-btn"
-                        onClick={() => {
-                          if (!newChecklistLabel.trim()) return;
-                          updateWorkspace((prevWs) =>
-                            prevWs.scheduledMatch
-                              ? {
-                                  ...prevWs,
-                                  scheduledMatch: {
-                                    ...prevWs.scheduledMatch,
-                                    checklist: [
-                                      ...prevWs.scheduledMatch.checklist,
-                                      { id: uid("chk"), label: newChecklistLabel.trim(), done: false },
-                                    ],
-                                  },
-                                }
-                              : prevWs
-                          );
-                          setNewChecklistLabel("");
-                        }}
-                      >
-                        <Plus size={15} />
-                      </button>
-                    </div>
-                  </div>
-
-                  {isAdmin && (
-                    <div style={{ marginTop: 14, display: "flex", gap: 8 }}>
-                      <button
-                        type="button"
-                        className="il-btn il-btn-emerald"
-                        style={{ flex: 1, padding: 13 }}
-                        onClick={() =>
-                          requireAdminPin("Start Live Match Scoring", startLiveMatchFromScheduled)
-                        }
-                      >
-                        <Play size={16} /> Start Live Match
-                      </button>
-                      <button
-                        type="button"
-                        className="il-btn il-btn-danger"
-                        onClick={() =>
-                          requireAdminPin("Cancel Scheduled Match", () =>
-                            updateWorkspace((prevWs) => ({ ...prevWs, scheduledMatch: null }))
-                          )
-                        }
-                      >
-                        <Trash2 size={15} />
-                      </button>
                     </div>
                   )}
                 </div>
-              )}
+              </div>
+            )}
 
-              <div className="il-card">
-                <div style={{ fontWeight: 800, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-                  <Trophy size={16} color="#fbbf24" /> Completed Matches ({ws.matchHistory.length})
-                </div>
-                {ws.matchHistory.length === 0 ? (
-                  <div style={{ fontSize: 13, color: "var(--muted)" }}>
-                    No matches played yet. Finished matches will be archived here.
+            {/* LIVE MATCH SCORING HUD */}
+            {lm && (
+              <div>
+                {lm.freeHitActive && (
+                  <div className="il-freehit-banner">
+                    FREE HIT ACTIVE - ONLY RUN OUT ALLOWED
                   </div>
-                ) : (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {ws.matchHistory.map((h) => (
+                )}
+
+                <div className="il-card il-hero-banner">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
+                    <div>
+                      <span className="il-pill" style={{ background: "rgba(244,63,94,0.22)", color: "#fda4af" }}>
+                        <Activity size={12} /> {lm.isSuperOver ? "SUPER OVER" : "INNINGS " + lm.innings} - {lm.title}
+                      </span>
+                      <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{lm.tossInfo}</div>
+                    </div>
+                    <a
+                      href={"https://wa.me/?text=" + encodeURIComponent(buildWhatsappScorecard(lm))}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="il-btn il-btn-emerald"
+                      style={{ textDecoration: "none", padding: "7px 11px", fontSize: 12 }}
+                    >
+                      <Share2 size={14} /> Share Scorecard
+                    </a>
+                  </div>
+
+                  <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 14, color: "var(--gold)", fontWeight: 800 }}>
+                        {lm.battingTeam} vs {lm.bowlingTeam}
+                      </div>
+                      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 4 }}>
+                        <span style={{ fontSize: 44, fontWeight: 900, lineHeight: 1 }}>
+                          {lm.runs}/{lm.wickets}
+                        </span>
+                        <span style={{ fontSize: 18, fontWeight: 800, color: "var(--cyan)" }}>
+                          ({formatOvers(lm.balls)} / {lm.totalOvers} ov)
+                        </span>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: "right" }}>
+                      <div style={{ fontSize: 13 }}>
+                        CRR: <strong>{lmCrr}</strong>
+                      </div>
+                      <div style={{ fontSize: 12, color: "var(--gold)", marginTop: 2 }}>
+                        Live MVP: <strong>{computeLiveMvp(lm)}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  {lm.innings === 2 && lm.target !== null && (
+                    <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(2,6,23,0.8)", border: "1px solid rgba(56,189,248,0.35)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, flexWrap: "wrap", gap: 6 }}>
+                        <span style={{ color: "var(--gold)" }}>TARGET {lm.target}</span>
+                        <span style={{ color: "var(--emerald)" }}>
+                          Need {lmRunsNeeded} runs in {lmBallsLeft} balls (RRR {lmRrr})
+                        </span>
+                      </div>
+                      <div style={{ height: 8, background: "#1e293b", borderRadius: 99, overflow: "hidden", marginTop: 8 }}>
+                        <div
+                          style={{
+                            height: "100%",
+                            width: Math.min(100, Math.round((lm.runs / Math.max(1, lm.target)) * 100)) + "%",
+                            background: "linear-gradient(90deg, #38bdf8, #34d399, #fbbf24)",
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
+
+                  {lm.resultText && (
+                    <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(52,211,153,0.18)", border: "1px solid rgba(52,211,153,0.5)", fontWeight: 900, color: "#6ee7b7", textAlign: "center" }}>
+                      {lm.resultText}
+                    </div>
+                  )}
+                </div>
+
+                <div className="il-card">
+                  <div className="il-grid-3 il-resp-1">
+                    <div style={{ background: "rgba(2,6,23,0.75)", padding: 10, borderRadius: 12, border: "1px solid rgba(251,191,36,0.4)" }}>
+                      <div style={{ fontSize: 10, color: "var(--gold)", fontWeight: 800 }}>STRIKER *</div>
+                      <select
+                        className="il-select"
+                        style={{ marginTop: 4, padding: "6px 8px", fontSize: 13 }}
+                        value={lm.striker}
+                        disabled={!isAdmin}
+                        onChange={(e) =>
+                          updateWorkspace((prevWs) =>
+                            prevWs.liveMatch ? { ...prevWs, liveMatch: { ...prevWs.liveMatch, striker: e.target.value } } : prevWs
+                          )
+                        }
+                      >
+                        {lm.battingPlayers.map((name) => (
+                          <option key={name} value={name}>
+                            {name} ({lm.batters[name]?.runs ?? 0}*)
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ background: "rgba(2,6,23,0.75)", padding: 10, borderRadius: 12 }}>
+                      <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>NON-STRIKER</div>
+                      <select
+                        className="il-select"
+                        style={{ marginTop: 4, padding: "6px 8px", fontSize: 13 }}
+                        value={lm.nonStriker}
+                        disabled={!isAdmin}
+                        onChange={(e) =>
+                          updateWorkspace((prevWs) =>
+                            prevWs.liveMatch ? { ...prevWs, liveMatch: { ...prevWs.liveMatch, nonStriker: e.target.value } } : prevWs
+                          )
+                        }
+                      >
+                        {lm.battingPlayers.map((name) => (
+                          <option key={name} value={name}>
+                            {name} ({lm.batters[name]?.runs ?? 0})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ background: "rgba(2,6,23,0.75)", padding: 10, borderRadius: 12, border: "1px solid rgba(56,189,248,0.35)" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <span style={{ fontSize: 10, color: "var(--cyan)", fontWeight: 800 }}>BOWLER</span>
+                        {isAdmin && !lm.isCompleted && (
+                          <button
+                            type="button"
+                            className="il-btn"
+                            style={{ padding: "2px 7px", fontSize: 10 }}
+                            onClick={() => {
+                              setLastOverBowler("");
+                              setShowNextBowlerModal(true);
+                            }}
+                          >
+                            Change
+                          </button>
+                        )}
+                      </div>
+                      <div style={{ fontWeight: 800, marginTop: 6, fontSize: 14 }}>{lm.bowler}</div>
+                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                        {lm.bowlers[lm.bowler]?.wickets ?? 0}/{lm.bowlers[lm.bowler]?.runs ?? 0} ({formatOvers(lm.bowlers[lm.bowler]?.balls ?? 0)} ov)
+                      </div>
+                    </div>
+                  </div>
+
+                  {isAdmin ? (
+                    <>
+                      <div className="il-grid-4" style={{ marginTop: 12 }}>
+                        {[0, 1, 2, 3, 4, 6].map((run) => {
+                          const runCls = run === 4 ? "il-btn-primary" : run === 6 ? "il-btn-gold" : "";
+                          return (
+                            <button
+                              key={run}
+                              type="button"
+                              disabled={lm.isCompleted || showNextBowlerModal}
+                              className={"il-btn " + runCls}
+                              onClick={() => recordLiveBall(run)}
+                            >
+                              +{run}
+                            </button>
+                          );
+                        })}
+                        <button
+                          type="button"
+                          disabled={lm.isCompleted || showNextBowlerModal}
+                          className="il-btn il-btn-purple"
+                          onClick={() => recordLiveBall(0, { isWide: true })}
+                        >
+                          WD
+                        </button>
+                        <button
+                          type="button"
+                          disabled={lm.isCompleted || showNextBowlerModal}
+                          className="il-btn il-btn-purple"
+                          onClick={() => recordLiveBall(0, { isNoBall: true })}
+                        >
+                          NB
+                        </button>
+                      </div>
+
+                      <div className="il-grid-2" style={{ marginTop: 10 }}>
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <select
+                            className="il-select"
+                            style={{ width: "48%" }}
+                            value={wicketType}
+                            onChange={(e) => setWicketType(e.target.value)}
+                          >
+                            <option value="Bowled">Bowled</option>
+                            <option value="Caught">Caught</option>
+                            <option value="Run Out">Run Out</option>
+                            <option value="LBW">LBW</option>
+                            <option value="Stumped">Stumped</option>
+                          </select>
+                          <button
+                            type="button"
+                            disabled={lm.isCompleted || showNextBowlerModal}
+                            className="il-btn il-btn-danger"
+                            style={{ flex: 1 }}
+                            onClick={() => recordLiveBall(0, { isWicket: true })}
+                          >
+                            <AlertTriangle size={15} /> OUT
+                          </button>
+                        </div>
+
+                        <button
+                          type="button"
+                          disabled={lm.history.length === 0}
+                          className="il-btn"
+                          onClick={undoLiveBall}
+                        >
+                          <RotateCcw size={15} /> Undo Ball
+                        </button>
+                      </div>
+
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
+                        <button
+                          type="button"
+                          disabled={lm.isCompleted}
+                          className="il-btn"
+                          style={{ fontSize: 12 }}
+                          onClick={handleRetiredHurt}
+                        >
+                          Retired Hurt
+                        </button>
+                        <button
+                          type="button"
+                          disabled={lm.isCompleted}
+                          className="il-btn"
+                          style={{ fontSize: 12 }}
+                          onClick={() => {
+                            setLastOverBowler("");
+                            setShowNextBowlerModal(true);
+                          }}
+                        >
+                          Choose New Bowler
+                        </button>
+                        {lm.innings === 1 && (
+                          <button type="button" className="il-btn il-btn-primary" style={{ fontSize: 12 }} onClick={startSecondInnings}>
+                            Start 2nd Innings
+                          </button>
+                        )}
+                        {lm.isTied && (
+                          <button type="button" className="il-btn il-btn-gold" style={{ fontSize: 12 }} onClick={launchSuperOver}>
+                            Start Super Over
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="il-btn il-btn-emerald"
+                          style={{ fontSize: 12 }}
+                          onClick={() => requireAdminPin("Finish Match and Award MVP Points", archiveLiveMatch)}
+                        >
+                          Finish and Save
+                        </button>
+                      </div>
+                    </>
+                  ) : (
+                    <div style={{ marginTop: 10, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>
+                      Live viewer mode - Admins control scoring.
+                    </div>
+                  )}
+                </div>
+
+                <div className="il-card">
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+                    <span style={{ fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
+                      <Shield size={16} color="#fbbf24" /> Umpire Signals
+                    </span>
+                    {umpireBanner && (
+                      <span className="il-pill" style={{ background: "rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
+                        {umpireBanner}
+                      </span>
+                    )}
+                  </div>
+                  <div className="il-grid-4">
+                    {["FOUR!", "SIX!", "OUT!", "NOT OUT", "WIDE", "NO BALL", "FREE HIT", "DRINKS"].map((sig) => (
+                      <button
+                        key={sig}
+                        type="button"
+                        className="il-btn"
+                        style={{ padding: "8px 6px", fontSize: 12 }}
+                        onClick={() => {
+                          setUmpireBanner("Umpire: " + sig);
+                          speak(sig);
+                        }}
+                      >
+                        {sig}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="il-card">
+                  <div style={{ fontWeight: 800, marginBottom: 10 }}>Over-by-Over Summary</div>
+                  {oversGrouped.length === 0 ? (
+                    <div style={{ fontSize: 13, color: "var(--muted)" }}>No balls bowled yet.</div>
+                  ) : (
+                    <div style={{ display: "grid", gap: 8 }}>
+                      {oversGrouped.map((ov) => (
+                        <div key={ov.overNum} style={{ background: "rgba(2,6,23,0.72)", padding: "10px 12px", borderRadius: 12, border: "1px solid var(--border)" }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
+                            <strong style={{ color: "var(--gold)" }}>Over {ov.overNum}</strong>
+                            <span>
+                              {ov.runs} runs - {ov.wickets} wkt(s)
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                            {ov.balls.map((b) => (
+                              <span key={b.id} className="il-ball" style={renderBallStyle(b)}>
+                                {renderBallText(b)}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SQUAD TAB (STADIUM TRADING CARDS + DIGITAL ID BUTTON) */}
+        {tab === "squad" && (
+          <div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12, flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <h2 style={{ margin: 0, fontSize: 20, fontWeight: 900 }}>{ws.clubName} Squad ({ws.players.length})</h2>
+                <div style={{ fontSize: 12, color: "var(--muted)" }}>Tap any card for stats or tap ID for their scannable barcode pass</div>
+              </div>
+              {isAdmin && (
+                <button type="button" className="il-btn il-btn-gold" onClick={() => setShowAddPlayerModal(true)}>
+                  <UserPlus size={15} /> Add Player
+                </button>
+              )}
+            </div>
+
+            <div className="il-grid-2" style={{ marginBottom: 12 }}>
+              <div className="il-card" style={{ marginBottom: 0, background: "linear-gradient(135deg, rgba(234,88,12,0.34), rgba(11,19,40,0.95))", borderColor: "rgba(251,146,60,0.55)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <PlayerAvatar playerId={orangeCapHolder.id} name={orangeCapHolder.name} size={46} rounded borderColor="#fb923c" />
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 900, color: "#fdba74", display: "flex", alignItems: "center", gap: 4 }}>
+                      <Crown size={13} /> ORANGE CAP
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 900, marginTop: 2 }}>{orangeCapHolder.name.split(" ")[0]}</div>
+                    <div style={{ fontSize: 12, color: "#ffedd5" }}>{orangeCapHolder.runs} Runs</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="il-card" style={{ marginBottom: 0, background: "linear-gradient(135deg, rgba(126,34,206,0.34), rgba(11,19,40,0.95))", borderColor: "rgba(192,132,252,0.55)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <PlayerAvatar playerId={purpleCapHolder.id} name={purpleCapHolder.name} size={46} rounded borderColor="#c084fc" />
+                  <div>
+                    <div style={{ fontSize: 10, fontWeight: 900, color: "#e9d5ff", display: "flex", alignItems: "center", gap: 4 }}>
+                      <Crown size={13} /> PURPLE CAP
+                    </div>
+                    <div style={{ fontSize: 15, fontWeight: 900, marginTop: 2 }}>{purpleCapHolder.name.split(" ")[0]}</div>
+                    <div style={{ fontSize: 12, color: "#f3e8ff" }}>{purpleCapHolder.wickets} Wickets</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="il-grid-3 il-resp-2">
+              {ws.players.map((p) => (
+                <div key={p.id} className="il-fut-card">
+                  <div
+                    className="il-fut-photo-wrap"
+                    onClick={() => {
+                      setSelectedProfileId(p.id);
+                      setProfileTab("stats");
+                    }}
+                  >
+                    <PlayerPortraitBanner playerId={p.id} name={p.name} height={190} />
+                    <div className="il-fut-fade" />
+
+                    <div
+                      style={{
+                        position: "absolute",
+                        top: 8,
+                        left: 10,
+                        fontSize: 22,
+                        fontWeight: 900,
+                        color: "#fbbf24",
+                        textShadow: "0 2px 10px rgba(0,0,0,0.95)",
+                        lineHeight: 1,
+                      }}
+                    >
+                      {p.jerseyNo}
+                    </div>
+
+                    <div style={{ position: "absolute", top: 8, right: 8, display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+                      {p.isAdmin && (
+                        <span className="il-pill" style={{ background: "rgba(251,191,36,0.92)", color: "#050a18", fontSize: 9 }}>
+                          ADMIN
+                        </span>
+                      )}
+                      <span className="il-pill" style={{ background: "rgba(2,6,23,0.84)", color: "#7dd3fc", fontSize: 9 }}>
+                        {p.role}
+                      </span>
+                    </div>
+
+                    <div style={{ position: "absolute", left: 10, right: 10, bottom: 8 }}>
+                      <div style={{ fontWeight: 900, fontSize: 15, lineHeight: 1.15, textShadow: "0 2px 8px rgba(0,0,0,0.95)" }}>
+                        {p.name}
+                      </div>
+                      <div style={{ fontSize: 11, color: "#fde68a", fontWeight: 700, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
+                        <Star size={11} /> {p.mvpPoints} MVP Pts
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ padding: 10 }}>
+                    <div className="il-grid-3" style={{ textAlign: "center", gap: 5 }}>
+                      <div style={{ background: "rgba(2,6,23,0.78)", padding: "5px 3px", borderRadius: 9 }}>
+                        <div style={{ fontSize: 9, color: "var(--muted)" }}>RUNS</div>
+                        <div style={{ fontWeight: 900, fontSize: 13, color: "var(--cyan)" }}>{p.runs}</div>
+                      </div>
+                      <div style={{ background: "rgba(2,6,23,0.78)", padding: "5px 3px", borderRadius: 9 }}>
+                        <div style={{ fontSize: 9, color: "var(--muted)" }}>WKTS</div>
+                        <div style={{ fontWeight: 900, fontSize: 13, color: "var(--purple)" }}>{p.wickets}</div>
+                      </div>
+                      <div style={{ background: "rgba(2,6,23,0.78)", padding: "5px 3px", borderRadius: 9 }}>
+                        <div style={{ fontSize: 9, color: "var(--muted)" }}>MAT</div>
+                        <div style={{ fontWeight: 900, fontSize: 13 }}>{p.matches}</div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: "flex", gap: 5, marginTop: 8 }}>
+                      <button
+                        type="button"
+                        className="il-btn"
+                        style={{ flex: 1, padding: "6px 6px", fontSize: 11 }}
+                        onClick={() => {
+                          setSelectedProfileId(p.id);
+                          setProfileTab("idcard");
+                        }}
+                      >
+                        <CreditCard size={12} color="#34d399" /> ID
+                      </button>
+                      <button
+                        type="button"
+                        className="il-btn"
+                        style={{ flex: 1, padding: "6px 6px", fontSize: 11 }}
+                        onClick={() => {
+                          setSelectedProfileId(p.id);
+                          setProfileTab("stats");
+                        }}
+                      >
+                        Stats
+                      </button>
+                      {isAdmin && (
+                        <button
+                          type="button"
+                          className="il-btn il-btn-gold"
+                          style={{ padding: "6px 8px", fontSize: 11 }}
+                          onClick={() => setEditingPlayer({ ...p })}
+                          title="Edit Player"
+                        >
+                          <Edit3 size={12} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* LEADERBOARD TAB */}
+        {tab === "leaderboard" && (
+          <div>
+            <div className="il-card il-hero-banner">
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
+                <div style={{ fontWeight: 900, fontSize: 18, display: "flex", alignItems: "center", gap: 6 }}>
+                  <Trophy size={18} color="#fbbf24" /> {ws.clubName} Leaderboard
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  {(["mvp", "batting", "bowling"] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      className={"il-btn " + (leaderTab === mode ? "il-btn-gold" : "")}
+                      style={{ padding: "6px 11px", fontSize: 12, textTransform: "uppercase" }}
+                      onClick={() => setLeaderTab(mode)}
+                    >
+                      {mode}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="il-grid-3" style={{ alignItems: "end", textAlign: "center" }}>
+                {[rankedPlayers[1], rankedPlayers[0], rankedPlayers[2]].map((pl, idx) => {
+                  if (!pl) return <div key={idx} />;
+                  const rank = idx === 1 ? 1 : idx === 0 ? 2 : 3;
+                  const val =
+                    leaderTab === "batting"
+                      ? pl.runs + " Runs"
+                      : leaderTab === "bowling"
+                      ? pl.wickets + " Wkts"
+                      : pl.mvpPoints + " MVP Pts";
+                  return (
+                    <div
+                      key={pl.id}
+                      onClick={() => {
+                        setSelectedProfileId(pl.id);
+                        setProfileTab("stats");
+                      }}
+                      style={{
+                        cursor: "pointer",
+                        background: rank === 1 ? "rgba(251,191,36,0.2)" : "rgba(2,6,23,0.78)",
+                        border: "1px solid " + (rank === 1 ? "rgba(251,191,36,0.7)" : "var(--border)"),
+                        borderRadius: 16,
+                        padding: rank === 1 ? "16px 8px" : "11px 8px",
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                      }}
+                    >
+                      {rank === 1 && <Crown size={18} color="#fbbf24" style={{ marginBottom: 4 }} />}
+                      <PlayerAvatar
+                        playerId={pl.id}
+                        name={pl.name}
+                        size={rank === 1 ? 66 : 50}
+                        rounded
+                        borderColor={rank === 1 ? "#fbbf24" : "#38bdf8"}
+                      />
+                      <div style={{ fontWeight: 900, fontSize: rank === 1 ? 18 : 14, color: rank === 1 ? "var(--gold)" : "var(--cyan)", marginTop: 6 }}>
+                        #{rank}
+                      </div>
+                      <div style={{ fontWeight: 800, fontSize: 12, marginTop: 2 }}>{pl.name.split(" ")[0]}</div>
+                      <div style={{ fontSize: 11, color: "#fde68a", fontWeight: 700, marginTop: 2 }}>{val}</div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="il-card">
+              <div style={{ display: "grid", gap: 8 }}>
+                {rankedPlayers.map((pl, index) => (
+                  <div
+                    key={pl.id}
+                    onClick={() => {
+                      setSelectedProfileId(pl.id);
+                      setProfileTab("stats");
+                    }}
+                    style={{
+                      cursor: "pointer",
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      padding: "9px 12px",
+                      borderRadius: 12,
+                      background: "rgba(2,6,23,0.74)",
+                    }}
+                  >
+                    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span className="il-pill" style={{ background: "rgba(56,189,248,0.18)", color: "#7dd3fc" }}>
+                        #{index + 1}
+                      </span>
+                      <PlayerAvatar playerId={pl.id} name={pl.name} size={38} rounded />
+                      <div>
+                        <div style={{ fontWeight: 800, fontSize: 14 }}>
+                          {pl.name} <span style={{ color: "var(--gold)", fontSize: 12 }}>#{pl.jerseyNo}</span>
+                        </div>
+                        <div style={{ fontSize: 11, color: "var(--muted)" }}>{pl.role}</div>
+                      </div>
+                    </div>
+                    <div style={{ fontWeight: 900, color: "var(--gold)", fontSize: 14 }}>
+                      {leaderTab === "batting"
+                        ? pl.runs + " Runs"
+                        : leaderTab === "bowling"
+                        ? pl.wickets + " Wkts"
+                        : pl.mvpPoints + " Pts"}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* FINANCE / TREASURY TAB */}
+        {tab === "treasury" && (
+          <div>
+            <div className="il-card">
+              <div style={{ fontWeight: 800, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
+                <Wallet size={16} color="#34d399" /> {ws.clubName} Treasury
+              </div>
+              <DonutPieChart
+                centerLabel={"Rs." + clubNetBalance}
+                slices={[
+                  { label: "Credits", value: totalCredits, color: "#34d399" },
+                  { label: "Advance Credits", value: totalAdvances, color: "#fbbf24" },
+                  { label: "Fines", value: totalFines, color: "#38bdf8" },
+                  { label: "Expenses", value: totalExpenses, color: "#fb7185" },
+                ]}
+              />
+            </div>
+
+            <div className="il-card">
+              <div style={{ fontWeight: 800, marginBottom: 10 }}>Pending Dues and Advances</div>
+              {ws.players.filter((p) => p.finesDue > 0 || p.advanceCredit > 0).length === 0 ? (
+                <div style={{ fontSize: 13, color: "var(--muted)" }}>All squad members are currently at Rs.0 dues and Rs.0 advance.</div>
+              ) : (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {ws.players
+                    .filter((p) => p.finesDue > 0 || p.advanceCredit > 0)
+                    .map((p) => (
                       <div
-                        key={h.id}
+                        key={p.id}
                         style={{
-                          padding: 12,
-                          borderRadius: 12,
-                          background: "rgba(2,6,23,0.72)",
-                          border: "1px solid var(--border)",
                           display: "flex",
                           justifyContent: "space-between",
                           alignItems: "center",
                           flexWrap: "wrap",
                           gap: 8,
+                          padding: "10px 12px",
+                          borderRadius: 12,
+                          background: "rgba(2,6,23,0.72)",
                         }}
                       >
-                        <div>
-                          <div style={{ fontWeight: 800 }}>{h.title}</div>
-                          <div style={{ fontSize: 12, color: "var(--cyan)" }}>{h.summary}</div>
-                          <div style={{ fontSize: 12, color: "var(--gold)" }}>
-                            {h.winner} - MVP: {h.mvp} ({h.date})
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <PlayerAvatar playerId={p.id} name={p.name} size={36} rounded />
+                          <div>
+                            <strong>{p.name}</strong>
+                            <div style={{ fontSize: 12, color: "var(--muted)" }}>
+                              Due: Rs.{p.finesDue} - Advance: Rs.{p.advanceCredit}
+                            </div>
                           </div>
                         </div>
-                        <a
-                          href={"https://wa.me/?text=" + encodeURIComponent(h.scorecardText)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="il-btn il-btn-emerald"
-                          style={{ textDecoration: "none", padding: "7px 10px", fontSize: 12 }}
-                        >
-                          <Share2 size={14} /> WhatsApp
-                        </a>
+                        {p.finesDue > 0 && (
+                          <a
+                            href={
+                              "https://wa.me/?text=" +
+                              encodeURIComponent(
+                                ws.clubName + " Reminder: Hi " + p.name + ", your pending club due is Rs." + p.finesDue + "."
+                              )
+                            }
+                            target="_blank"
+                            rel="noreferrer"
+                            className="il-btn il-btn-emerald"
+                            style={{ textDecoration: "none", padding: "6px 10px", fontSize: 12 }}
+                          >
+                            <Share2 size={13} /> WhatsApp Reminder
+                          </a>
+                        )}
                       </div>
                     ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {lm && (
-            <div>
-              {lm.freeHitActive && (
-                <div className="il-freehit-banner">
-                  FREE HIT ACTIVE - ONLY RUN OUT ALLOWED
                 </div>
               )}
+            </div>
 
-              <div className="il-card il-hero-card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8 }}>
-                  <div>
-                    <span className="il-pill" style={{ background: "rgba(244,63,94,0.22)", color: "#fda4af" }}>
-                      <Activity size={12} /> {lm.isSuperOver ? "SUPER OVER" : "INNINGS " + lm.innings} - {lm.title}
-                    </span>
-                    <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>{lm.tossInfo}</div>
-                  </div>
-                  <a
-                    href={"https://wa.me/?text=" + encodeURIComponent(buildWhatsappScorecard(lm))}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="il-btn il-btn-emerald"
-                    style={{ textDecoration: "none", padding: "7px 11px", fontSize: 12 }}
-                  >
-                    <Share2 size={14} /> Share Scorecard
-                  </a>
-                </div>
-
-                <div style={{ marginTop: 12, display: "flex", justifyContent: "space-between", alignItems: "baseline", flexWrap: "wrap", gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 14, color: "var(--gold)", fontWeight: 800 }}>
-                      {lm.battingTeam} vs {lm.bowlingTeam}
-                    </div>
-                    <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 4 }}>
-                      <span style={{ fontSize: 44, fontWeight: 900, lineHeight: 1 }}>
-                        {lm.runs}/{lm.wickets}
-                      </span>
-                      <span style={{ fontSize: 18, fontWeight: 800, color: "var(--cyan)" }}>
-                        ({formatOvers(lm.balls)} / {lm.totalOvers} ov)
-                      </span>
-                    </div>
-                  </div>
-                  <div style={{ textAlign: "right" }}>
-                    <div style={{ fontSize: 13 }}>
-                      CRR: <strong>{lmCrr}</strong>
-                    </div>
-                    <div style={{ fontSize: 12, color: "var(--gold)", marginTop: 2 }}>
-                      Auto MVP: <strong>{computeLiveMvp(lm)}</strong>
-                    </div>
-                  </div>
-                </div>
-
-                {lm.innings === 2 && lm.target !== null && (
-                  <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(2,6,23,0.8)", border: "1px solid rgba(56,189,248,0.35)" }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: 13, fontWeight: 800, flexWrap: "wrap", gap: 6 }}>
-                      <span style={{ color: "var(--gold)" }}>TARGET {lm.target}</span>
-                      <span style={{ color: "var(--emerald)" }}>
-                        Need {lmRunsNeeded} runs in {lmBallsLeft} balls (RRR {lmRrr})
-                      </span>
-                    </div>
-                    <div style={{ height: 8, background: "#1e293b", borderRadius: 99, overflow: "hidden", marginTop: 8 }}>
-                      <div
-                        style={{
-                          height: "100%",
-                          width: Math.min(100, Math.round((lm.runs / Math.max(1, lm.target)) * 100)) + "%",
-                          background: "linear-gradient(90deg, #38bdf8, #34d399, #fbbf24)",
-                        }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                {lm.resultText && (
-                  <div style={{ marginTop: 12, padding: 12, borderRadius: 12, background: "rgba(52,211,153,0.18)", border: "1px solid rgba(52,211,153,0.5)", fontWeight: 900, color: "#6ee7b7", textAlign: "center" }}>
-                    {lm.resultText}
-                  </div>
-                )}
-              </div>
-
+            {isAdmin && (
               <div className="il-card">
-                <div className="il-grid-3 il-resp-1">
-                  <div style={{ background: "rgba(2,6,23,0.75)", padding: 10, borderRadius: 12, border: "1px solid rgba(251,191,36,0.4)" }}>
-                    <div style={{ fontSize: 10, color: "var(--gold)", fontWeight: 800 }}>STRIKER *</div>
-                    <select
-                      className="il-select"
-                      style={{ marginTop: 4, padding: "6px 8px", fontSize: 13 }}
-                      value={lm.striker}
-                      disabled={!isAdmin}
-                      onChange={(e) =>
-                        updateWorkspace((prevWs) =>
-                          prevWs.liveMatch ? { ...prevWs, liveMatch: { ...prevWs.liveMatch, striker: e.target.value } } : prevWs
-                        )
-                      }
-                    >
-                      {lm.battingPlayers.map((name) => (
-                        <option key={name} value={name}>
-                          {name} ({lm.batters[name]?.runs ?? 0}*)
+                <div style={{ fontWeight: 800, marginBottom: 10 }}>Add Treasury Entry (Admin PIN)</div>
+                <div style={{ display: "grid", gap: 8 }}>
+                  <input
+                    className="il-input"
+                    placeholder="Description (e.g., Wind Balls, Turf Fee, Fine)"
+                    value={trTitle}
+                    onChange={(e) => setTrTitle(e.target.value)}
+                  />
+                  <div className="il-grid-4 il-resp-2">
+                    <select className="il-select" value={trType} onChange={(e) => setTrType(e.target.value as LedgerType)}>
+                      <option value="CREDIT">Credit (+)</option>
+                      <option value="ADVANCE">Advance (+)</option>
+                      <option value="FINE">Fine (+)</option>
+                      <option value="EXPENSE">Expense (-)</option>
+                    </select>
+                    <input
+                      className="il-input"
+                      type="number"
+                      min={1}
+                      placeholder="Amount Rs."
+                      value={trAmount}
+                      onChange={(e) => setTrAmount(e.target.value)}
+                    />
+                    <select className="il-select" value={trMember} onChange={(e) => setTrMember(e.target.value)}>
+                      <option value="All Squad">All Squad</option>
+                      {ws.players.map((p) => (
+                        <option key={p.id} value={p.name}>
+                          {p.name}
                         </option>
                       ))}
                     </select>
-                  </div>
-
-                  <div style={{ background: "rgba(2,6,23,0.75)", padding: 10, borderRadius: 12 }}>
-                    <div style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>NON-STRIKER</div>
-                    <select
-                      className="il-select"
-                      style={{ marginTop: 4, padding: "6px 8px", fontSize: 13 }}
-                      value={lm.nonStriker}
-                      disabled={!isAdmin}
-                      onChange={(e) =>
-                        updateWorkspace((prevWs) =>
-                          prevWs.liveMatch ? { ...prevWs, liveMatch: { ...prevWs.liveMatch, nonStriker: e.target.value } } : prevWs
-                        )
-                      }
-                    >
-                      {lm.battingPlayers.map((name) => (
-                        <option key={name} value={name}>
-                          {name} ({lm.batters[name]?.runs ?? 0})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ background: "rgba(2,6,23,0.75)", padding: 10, borderRadius: 12, border: "1px solid rgba(56,189,248,0.35)" }}>
-                    <div style={{ fontSize: 10, color: "var(--cyan)", fontWeight: 800 }}>BOWLER</div>
-                    <div style={{ fontWeight: 800, marginTop: 6, fontSize: 14 }}>{lm.bowler}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                      {lm.bowlers[lm.bowler]?.wickets ?? 0}/{lm.bowlers[lm.bowler]?.runs ?? 0} ({formatOvers(lm.bowlers[lm.bowler]?.balls ?? 0)} ov)
-                    </div>
-                  </div>
-                </div>
-
-                {isAdmin ? (
-                  <>
-                    <div className="il-grid-4" style={{ marginTop: 12 }}>
-                      {[0, 1, 2, 3, 4, 6].map((run) => {
-                        const runCls = run === 4 ? "il-btn-primary" : run === 6 ? "il-btn-gold" : "";
-                        return (
-                          <button
-                            key={run}
-                            type="button"
-                            disabled={lm.isCompleted}
-                            className={"il-btn " + runCls}
-                            onClick={() => recordLiveBall(run)}
-                          >
-                            +{run}
-                          </button>
-                        );
-                      })}
-                      <button
-                        type="button"
-                        disabled={lm.isCompleted}
-                        className="il-btn il-btn-purple"
-                        onClick={() => recordLiveBall(0, { isWide: true })}
-                      >
-                        WD
-                      </button>
-                      <button
-                        type="button"
-                        disabled={lm.isCompleted}
-                        className="il-btn il-btn-purple"
-                        onClick={() => recordLiveBall(0, { isNoBall: true })}
-                      >
-                        NB
-                      </button>
-                    </div>
-
-                    <div className="il-grid-2" style={{ marginTop: 10 }}>
-                      <div style={{ display: "flex", gap: 6 }}>
-                        <select
-                          className="il-select"
-                          style={{ width: "48%" }}
-                          value={wicketType}
-                          onChange={(e) => setWicketType(e.target.value)}
-                        >
-                          <option value="Bowled">Bowled</option>
-                          <option value="Caught">Caught</option>
-                          <option value="Run Out">Run Out</option>
-                          <option value="LBW">LBW</option>
-                          <option value="Stumped">Stumped</option>
-                        </select>
-                        <button
-                          type="button"
-                          disabled={lm.isCompleted}
-                          className="il-btn il-btn-danger"
-                          style={{ flex: 1 }}
-                          onClick={() => recordLiveBall(0, { isWicket: true })}
-                        >
-                          <AlertTriangle size={15} /> OUT
-                        </button>
-                      </div>
-
-                      <button
-                        type="button"
-                        disabled={lm.history.length === 0}
-                        className="il-btn"
-                        onClick={undoLiveBall}
-                      >
-                        <RotateCcw size={15} /> Undo Ball
-                      </button>
-                    </div>
-
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
-                      <button
-                        type="button"
-                        disabled={lm.isCompleted}
-                        className="il-btn"
-                        style={{ fontSize: 12 }}
-                        onClick={handleRetiredHurt}
-                      >
-                        Retired Hurt
-                      </button>
-                      <button
-                        type="button"
-                        disabled={lm.isCompleted}
-                        className="il-btn"
-                        style={{ fontSize: 12 }}
-                        onClick={() => {
-                          setSwapBowlerName(lm.bowlingPlayers[0] || "");
-                          setShowSwapBowler((s) => !s);
-                        }}
-                      >
-                        Swap Bowler
-                      </button>
-                      {lm.innings === 1 && (
-                        <button type="button" className="il-btn il-btn-primary" style={{ fontSize: 12 }} onClick={startSecondInnings}>
-                          Start 2nd Innings
-                        </button>
-                      )}
-                      {lm.isTied && (
-                        <button type="button" className="il-btn il-btn-gold" style={{ fontSize: 12 }} onClick={launchSuperOver}>
-                          Start Super Over
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="il-btn il-btn-emerald"
-                        style={{ fontSize: 12 }}
-                        onClick={() => requireAdminPin("Finish and Save Match", archiveLiveMatch)}
-                      >
-                        Finish and Save
-                      </button>
-                    </div>
-
-                    {showSwapBowler && (
-                      <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
-                        <select
-                          className="il-select"
-                          value={swapBowlerName}
-                          onChange={(e) => setSwapBowlerName(e.target.value)}
-                        >
-                          {lm.bowlingPlayers.map((name) => (
-                            <option key={name} value={name}>
-                              {name}
-                            </option>
-                          ))}
-                        </select>
-                        <button type="button" className="il-btn il-btn-gold" onClick={handleMidOverSwap}>
-                          Swap Now
-                        </button>
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div style={{ marginTop: 10, fontSize: 12, color: "var(--muted)", textAlign: "center" }}>
-                    Live viewer mode - Admins control scoring.
-                  </div>
-                )}
-              </div>
-
-              <div className="il-card">
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <span style={{ fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                    <Shield size={16} color="#fbbf24" /> Umpire Signals
-                  </span>
-                  {umpireBanner && (
-                    <span className="il-pill" style={{ background: "rgba(56,189,248,0.2)", color: "#7dd3fc" }}>
-                      {umpireBanner}
-                    </span>
-                  )}
-                </div>
-                <div className="il-grid-4">
-                  {["FOUR!", "SIX!", "OUT!", "NOT OUT", "WIDE", "NO BALL", "FREE HIT", "DRINKS"].map((sig) => (
                     <button
-                      key={sig}
                       type="button"
-                      className="il-btn"
-                      style={{ padding: "8px 6px", fontSize: 12 }}
+                      className="il-btn il-btn-gold"
                       onClick={() => {
-                        setUmpireBanner("Umpire: " + sig);
-                        speak(sig);
-                      }}
-                    >
-                      {sig}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="il-card">
-                <div style={{ fontWeight: 800, marginBottom: 10 }}>Over-by-Over Summary</div>
-                {oversGrouped.length === 0 ? (
-                  <div style={{ fontSize: 13, color: "var(--muted)" }}>No balls bowled yet.</div>
-                ) : (
-                  <div style={{ display: "grid", gap: 8 }}>
-                    {oversGrouped.map((ov) => (
-                      <div key={ov.overNum} style={{ background: "rgba(2,6,23,0.72)", padding: "10px 12px", borderRadius: 12, border: "1px solid var(--border)" }}>
-                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, marginBottom: 6 }}>
-                          <strong style={{ color: "var(--gold)" }}>Over {ov.overNum}</strong>
-                          <span>
-                            {ov.runs} runs - {ov.wickets} wkt(s)
-                          </span>
-                        </div>
-                        <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                          {ov.balls.map((b) => (
-                            <span key={b.id} className="il-ball" style={renderBallStyle(b)}>
-                              {renderBallText(b)}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* SQUAD TAB (FUT / IPL PHOTO CARDS) */}
-      {tab === "squad" && (
-        <div>
-          <div className="il-grid-2" style={{ marginBottom: 12 }}>
-            <div className="il-card" style={{ marginBottom: 0, background: "linear-gradient(135deg, rgba(234,88,12,0.34), rgba(11,19,40,0.95))", borderColor: "rgba(251,146,60,0.55)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <PlayerAvatar playerId={orangeCapHolder.id} name={orangeCapHolder.name} size={46} rounded borderColor="#fb923c" />
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 900, color: "#fdba74", display: "flex", alignItems: "center", gap: 4 }}>
-                    <Crown size={13} /> ORANGE CAP
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 900, marginTop: 2 }}>{orangeCapHolder.name.split(" ")[0]}</div>
-                  <div style={{ fontSize: 12, color: "#ffedd5" }}>{orangeCapHolder.runs} Runs</div>
-                </div>
-              </div>
-            </div>
-
-            <div className="il-card" style={{ marginBottom: 0, background: "linear-gradient(135deg, rgba(126,34,206,0.34), rgba(11,19,40,0.95))", borderColor: "rgba(192,132,252,0.55)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                <PlayerAvatar playerId={purpleCapHolder.id} name={purpleCapHolder.name} size={46} rounded borderColor="#c084fc" />
-                <div>
-                  <div style={{ fontSize: 10, fontWeight: 900, color: "#e9d5ff", display: "flex", alignItems: "center", gap: 4 }}>
-                    <Crown size={13} /> PURPLE CAP
-                  </div>
-                  <div style={{ fontSize: 15, fontWeight: 900, marginTop: 2 }}>{purpleCapHolder.name.split(" ")[0]}</div>
-                  <div style={{ fontSize: 12, color: "#f3e8ff" }}>{purpleCapHolder.wickets} Wickets</div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div className="il-grid-2">
-            {ws.players.map((p, idx) => (
-              <div key={p.id} className="il-fut-card">
-                <div className="il-fut-photo-wrap" onClick={() => setSelectedProfileId(p.id)}>
-                  <PlayerPortraitBanner playerId={p.id} name={p.name} height={185} />
-                  <div className="il-fut-fade" />
-
-                  <div style={{ position: "absolute", top: 8, left: 8, display: "flex", gap: 4 }}>
-                    <span className="il-pill" style={{ background: "rgba(2,6,23,0.8)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.45)" }}>
-                      #{idx + 1}
-                    </span>
-                  </div>
-
-                  <div style={{ position: "absolute", top: 8, right: 8 }}>
-                    <span className="il-pill" style={{ background: "rgba(2,6,23,0.82)", color: "#7dd3fc", fontSize: 9 }}>
-                      {p.role}
-                    </span>
-                  </div>
-
-                  <div style={{ position: "absolute", left: 10, right: 10, bottom: 8 }}>
-                    <div style={{ fontWeight: 900, fontSize: 15, lineHeight: 1.15, textShadow: "0 2px 8px rgba(0,0,0,0.9)" }}>
-                      {p.name}
-                    </div>
-                    <div style={{ fontSize: 11, color: "#fde68a", fontWeight: 700, marginTop: 2, display: "flex", alignItems: "center", gap: 4 }}>
-                      <Award size={11} /> {p.funAward}
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ padding: 10 }}>
-                  <div className="il-grid-3" style={{ textAlign: "center", gap: 6 }}>
-                    <div style={{ background: "rgba(2,6,23,0.75)", padding: "6px 4px", borderRadius: 10 }}>
-                      <div style={{ fontSize: 9, color: "var(--muted)" }}>RUNS</div>
-                      <div style={{ fontWeight: 900, fontSize: 14, color: "var(--cyan)" }}>{p.runs}</div>
-                    </div>
-                    <div style={{ background: "rgba(2,6,23,0.75)", padding: "6px 4px", borderRadius: 10 }}>
-                      <div style={{ fontSize: 9, color: "var(--muted)" }}>WKTS</div>
-                      <div style={{ fontWeight: 900, fontSize: 14, color: "var(--purple)" }}>{p.wickets}</div>
-                    </div>
-                    <div style={{ background: "rgba(2,6,23,0.75)", padding: "6px 4px", borderRadius: 10 }}>
-                      <div style={{ fontSize: 9, color: "var(--muted)" }}>MAT</div>
-                      <div style={{ fontWeight: 900, fontSize: 14 }}>{p.matches}</div>
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 6, marginTop: 8 }}>
-                    <button
-                      type="button"
-                      className="il-btn"
-                      style={{ flex: 1, padding: "6px 8px", fontSize: 11 }}
-                      onClick={() => setSelectedProfileId(p.id)}
-                    >
-                      Stats
-                    </button>
-                    {isAdmin && (
-                      <button
-                        type="button"
-                        className="il-btn il-btn-gold"
-                        style={{ padding: "6px 10px", fontSize: 11 }}
-                        onClick={() =>
-                          requireAdminPin("Edit " + p.name, () => {
-                            setEditPlayerId(p.id);
-                            setEditAwardText(p.funAward);
-                          })
-                        }
-                      >
-                        Edit
-                      </button>
-                    )}
-                  </div>
-
-                  {editPlayerId === p.id && (
-                    <div style={{ marginTop: 10, padding: 8, borderRadius: 10, background: "rgba(2,6,23,0.9)", display: "grid", gap: 6 }}>
-                      <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-                        <button
-                          type="button"
-                          className="il-btn il-btn-emerald"
-                          style={{ padding: "5px 7px", fontSize: 10 }}
-                          onClick={() =>
-                            updateWorkspace((prevWs) => ({
-                              ...prevWs,
-                              players: prevWs.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, runs: pl.runs + 10, ballsFaced: pl.ballsFaced + 8 } : pl
-                              ),
-                            }))
-                          }
-                        >
-                          +10R
-                        </button>
-                        <button
-                          type="button"
-                          className="il-btn il-btn-primary"
-                          style={{ padding: "5px 7px", fontSize: 10 }}
-                          onClick={() =>
-                            updateWorkspace((prevWs) => ({
-                              ...prevWs,
-                              players: prevWs.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, wickets: pl.wickets + 1, oversBowled: pl.oversBowled + 1 } : pl
-                              ),
-                            }))
-                          }
-                        >
-                          +1W
-                        </button>
-                        <button
-                          type="button"
-                          className="il-btn il-btn-danger"
-                          style={{ padding: "5px 7px", fontSize: 10 }}
-                          onClick={() =>
-                            updateWorkspace((prevWs) => ({
-                              ...prevWs,
-                              players: prevWs.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, finesDue: pl.finesDue + 50 } : pl
-                              ),
-                            }))
-                          }
-                        >
-                          +50D
-                        </button>
-                        <button
-                          type="button"
-                          className="il-btn il-btn-gold"
-                          style={{ padding: "5px 7px", fontSize: 10 }}
-                          onClick={() =>
-                            updateWorkspace((prevWs) => ({
-                              ...prevWs,
-                              players: prevWs.players.map((pl) =>
-                                pl.id === p.id ? { ...pl, finesDue: 0 } : pl
-                              ),
-                            }))
-                          }
-                        >
-                          Clear
-                        </button>
-                      </div>
-                      <input
-                        className="il-input"
-                        style={{ padding: "7px 8px", fontSize: 12 }}
-                        value={editAwardText}
-                        onChange={(e) => setEditAwardText(e.target.value)}
-                        placeholder="Award title"
-                      />
-                      <button
-                        type="button"
-                        className="il-btn il-btn-gold"
-                        style={{ padding: "6px 8px", fontSize: 11 }}
-                        onClick={() => {
+                        const amt = Number(trAmount);
+                        if (!trTitle.trim() || !amt || amt <= 0) return;
+                        requireAdminPin("Add Treasury Entry", () => {
+                          const entry: TreasuryEntry = {
+                            id: uid("tr"),
+                            title: trTitle.trim(),
+                            type: trType,
+                            amount: amt,
+                            memberName: trMember,
+                            date: new Date().toISOString().slice(0, 10),
+                          };
                           updateWorkspace((prevWs) => ({
                             ...prevWs,
-                            players: prevWs.players.map((pl) =>
-                              pl.id === p.id ? { ...pl, funAward: editAwardText.trim() || pl.funAward } : pl
-                            ),
+                            treasury: [entry, ...prevWs.treasury],
+                            players:
+                              trType === "ADVANCE"
+                                ? prevWs.players.map((pl) =>
+                                    pl.name === trMember ? { ...pl, advanceCredit: pl.advanceCredit + amt } : pl
+                                  )
+                                : prevWs.players,
                           }));
-                          setEditPlayerId("");
-                        }}
-                      >
-                        Save
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* LEADERBOARD TAB */}
-      {tab === "leaderboard" && (
-        <div>
-          <div className="il-card il-hero-card">
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 8, marginBottom: 16 }}>
-              <div style={{ fontWeight: 900, fontSize: 18, display: "flex", alignItems: "center", gap: 6 }}>
-                <Trophy size={18} color="#fbbf24" /> {ws.clubName} Leaderboard
-              </div>
-              <div style={{ display: "flex", gap: 6 }}>
-                {(["team", "batting", "bowling"] as const).map((mode) => (
-                  <button
-                    key={mode}
-                    type="button"
-                    className={"il-btn " + (leaderTab === mode ? "il-btn-gold" : "")}
-                    style={{ padding: "6px 11px", fontSize: 12, textTransform: "capitalize" }}
-                    onClick={() => setLeaderTab(mode)}
-                  >
-                    {mode}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="il-grid-3" style={{ alignItems: "end", textAlign: "center" }}>
-              {[rankedPlayers[1], rankedPlayers[0], rankedPlayers[2]].map((pl, idx) => {
-                if (!pl) return <div key={idx} />;
-                const rank = idx === 1 ? 1 : idx === 0 ? 2 : 3;
-                const val =
-                  leaderTab === "batting"
-                    ? pl.runs + " Runs"
-                    : leaderTab === "bowling"
-                    ? pl.wickets + " Wkts"
-                    : playerRankScore(pl) + " Pts";
-                return (
-                  <div
-                    key={pl.id}
-                    onClick={() => setSelectedProfileId(pl.id)}
-                    style={{
-                      cursor: "pointer",
-                      background: rank === 1 ? "rgba(251,191,36,0.2)" : "rgba(2,6,23,0.75)",
-                      border: "1px solid " + (rank === 1 ? "rgba(251,191,36,0.65)" : "var(--border)"),
-                      borderRadius: 16,
-                      padding: rank === 1 ? "14px 8px" : "10px 8px",
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                    }}
-                  >
-                    <PlayerAvatar
-                      playerId={pl.id}
-                      name={pl.name}
-                      size={rank === 1 ? 62 : 48}
-                      rounded
-                      borderColor={rank === 1 ? "#fbbf24" : "#38bdf8"}
-                    />
-                    <div style={{ fontWeight: 900, fontSize: rank === 1 ? 18 : 14, color: rank === 1 ? "var(--gold)" : "var(--cyan)", marginTop: 6 }}>
-                      #{rank}
-                    </div>
-                    <div style={{ fontWeight: 800, fontSize: 12, marginTop: 2 }}>{pl.name.split(" ")[0]}</div>
-                    <div style={{ fontSize: 11, color: "var(--muted)", marginTop: 2 }}>{val}</div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
-          <div className="il-card">
-            <div style={{ display: "grid", gap: 8 }}>
-              {rankedPlayers.map((pl, index) => (
-                <div
-                  key={pl.id}
-                  onClick={() => setSelectedProfileId(pl.id)}
-                  style={{
-                    cursor: "pointer",
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    padding: "9px 12px",
-                    borderRadius: 12,
-                    background: "rgba(2,6,23,0.72)",
-                  }}
-                >
-                  <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <span className="il-pill" style={{ background: "rgba(56,189,248,0.18)", color: "#7dd3fc" }}>
-                      #{index + 1}
-                    </span>
-                    <PlayerAvatar playerId={pl.id} name={pl.name} size={36} rounded />
-                    <div>
-                      <div style={{ fontWeight: 800, fontSize: 14 }}>{pl.name}</div>
-                      <div style={{ fontSize: 11, color: "var(--muted)" }}>{pl.role}</div>
-                    </div>
-                  </div>
-                  <div style={{ fontWeight: 900, color: "var(--gold)", fontSize: 14 }}>
-                    {leaderTab === "batting"
-                      ? pl.runs + " Runs"
-                      : leaderTab === "bowling"
-                      ? pl.wickets + " Wkts"
-                      : playerRankScore(pl) + " Pts"}
+                          setTrTitle("");
+                          setTrAmount("");
+                        });
+                      }}
+                    >
+                      <Plus size={15} /> Save
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
+              </div>
+            )}
 
-      {/* TREASURY TAB */}
-      {tab === "treasury" && (
-        <div>
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
-              <Wallet size={16} color="#34d399" /> {ws.clubName} Treasury
-            </div>
-            <DonutPieChart
-              centerLabel={"Rs." + clubNetBalance}
-              slices={[
-                { label: "Credits", value: totalCredits, color: "#34d399" },
-                { label: "Advance Credits", value: totalAdvances, color: "#fbbf24" },
-                { label: "Fines", value: totalFines, color: "#38bdf8" },
-                { label: "Expenses", value: totalExpenses, color: "#fb7185" },
-              ]}
-            />
-          </div>
-
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>Pending Dues and Advances</div>
-            {ws.players.filter((p) => p.finesDue > 0 || p.advanceCredit > 0).length === 0 ? (
-              <div style={{ fontSize: 13, color: "var(--muted)" }}>All squad members are currently at Rs.0 dues and Rs.0 advance.</div>
-            ) : (
-              <div style={{ display: "grid", gap: 8 }}>
-                {ws.players
-                  .filter((p) => p.finesDue > 0 || p.advanceCredit > 0)
-                  .map((p) => (
+            <div className="il-card">
+              <div style={{ fontWeight: 800, marginBottom: 10 }}>Ledger History ({ws.treasury.length})</div>
+              {ws.treasury.length === 0 ? (
+                <div style={{ fontSize: 13, color: "var(--muted)" }}>No transactions recorded yet.</div>
+              ) : (
+                <div style={{ display: "grid", gap: 8 }}>
+                  {ws.treasury.map((t) => (
                     <div
-                      key={p.id}
+                      key={t.id}
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
                         alignItems: "center",
-                        flexWrap: "wrap",
-                        gap: 8,
                         padding: "10px 12px",
                         borderRadius: 12,
-                        background: "rgba(2,6,23,0.72)",
+                        background: "rgba(2,6,23,0.7)",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <PlayerAvatar playerId={p.id} name={p.name} size={36} rounded />
-                        <div>
-                          <strong>{p.name}</strong>
-                          <div style={{ fontSize: 12, color: "var(--muted)" }}>
-                            Due: Rs.{p.finesDue} - Advance: Rs.{p.advanceCredit}
-                          </div>
+                      <div>
+                        <div style={{ fontWeight: 700, fontSize: 14 }}>{t.title}</div>
+                        <div style={{ fontSize: 11, color: "var(--muted)" }}>
+                          {t.memberName} - {t.date} - {t.type}
                         </div>
                       </div>
-                      {p.finesDue > 0 && (
-                        <a
-                          href={
-                            "https://wa.me/?text=" +
-                            encodeURIComponent(
-                              ws.clubName + " Reminder: Hi " + p.name + ", your pending club due is Rs." + p.finesDue + "."
-                            )
-                          }
-                          target="_blank"
-                          rel="noreferrer"
-                          className="il-btn il-btn-emerald"
-                          style={{ textDecoration: "none", padding: "6px 10px", fontSize: 12 }}
-                        >
-                          <Share2 size={13} /> WhatsApp Reminder
-                        </a>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
-
-          {isAdmin && (
-            <div className="il-card">
-              <div style={{ fontWeight: 800, marginBottom: 10 }}>Add Treasury Entry (Admin PIN)</div>
-              <div style={{ display: "grid", gap: 8 }}>
-                <input
-                  className="il-input"
-                  placeholder="Description (e.g., Wind Balls, Turf Fee, Fine)"
-                  value={trTitle}
-                  onChange={(e) => setTrTitle(e.target.value)}
-                />
-                <div className="il-grid-4 il-resp-2">
-                  <select className="il-select" value={trType} onChange={(e) => setTrType(e.target.value as LedgerType)}>
-                    <option value="CREDIT">Credit (+)</option>
-                    <option value="ADVANCE">Advance (+)</option>
-                    <option value="FINE">Fine (+)</option>
-                    <option value="EXPENSE">Expense (-)</option>
-                  </select>
-                  <input
-                    className="il-input"
-                    type="number"
-                    min={1}
-                    placeholder="Amount Rs."
-                    value={trAmount}
-                    onChange={(e) => setTrAmount(e.target.value)}
-                  />
-                  <select className="il-select" value={trMember} onChange={(e) => setTrMember(e.target.value)}>
-                    <option value="All Squad">All Squad</option>
-                    {ws.players.map((p) => (
-                      <option key={p.id} value={p.name}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                  <button
-                    type="button"
-                    className="il-btn il-btn-gold"
-                    onClick={() => {
-                      const amt = Number(trAmount);
-                      if (!trTitle.trim() || !amt || amt <= 0) return;
-                      requireAdminPin("Add Treasury Entry", () => {
-                        const entry: TreasuryEntry = {
-                          id: uid("tr"),
-                          title: trTitle.trim(),
-                          type: trType,
-                          amount: amt,
-                          memberName: trMember,
-                          date: new Date().toISOString().slice(0, 10),
-                        };
-                        updateWorkspace((prevWs) => ({
-                          ...prevWs,
-                          treasury: [entry, ...prevWs.treasury],
-                          players:
-                            trType === "ADVANCE"
-                              ? prevWs.players.map((pl) =>
-                                  pl.name === trMember ? { ...pl, advanceCredit: pl.advanceCredit + amt } : pl
-                                )
-                              : prevWs.players,
-                        }));
-                        setTrTitle("");
-                        setTrAmount("");
-                      });
-                    }}
-                  >
-                    <Plus size={15} /> Save
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 10 }}>Ledger History ({ws.treasury.length})</div>
-            {ws.treasury.length === 0 ? (
-              <div style={{ fontSize: 13, color: "var(--muted)" }}>No transactions recorded yet.</div>
-            ) : (
-              <div style={{ display: "grid", gap: 8 }}>
-                {ws.treasury.map((t) => (
-                  <div
-                    key={t.id}
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "10px 12px",
-                      borderRadius: 12,
-                      background: "rgba(2,6,23,0.7)",
-                    }}
-                  >
-                    <div>
-                      <div style={{ fontWeight: 700, fontSize: 14 }}>{t.title}</div>
-                      <div style={{ fontSize: 11, color: "var(--muted)" }}>
-                        {t.memberName} - {t.date} - {t.type}
+                      <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                        <strong style={{ color: t.type === "EXPENSE" ? "var(--rose)" : "var(--emerald)" }}>
+                          {t.type === "EXPENSE" ? "-Rs." : "+Rs."}
+                          {t.amount}
+                        </strong>
+                        {isAdmin && (
+                          <button
+                            type="button"
+                            className="il-btn"
+                            style={{ padding: "5px 7px" }}
+                            onClick={() =>
+                              requireAdminPin("Delete Ledger Entry", () =>
+                                updateWorkspace((prevWs) => ({
+                                  ...prevWs,
+                                  treasury: prevWs.treasury.filter((x) => x.id !== t.id),
+                                }))
+                              )
+                            }
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        )}
                       </div>
                     </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <strong style={{ color: t.type === "EXPENSE" ? "var(--rose)" : "var(--emerald)" }}>
-                        {t.type === "EXPENSE" ? "-Rs." : "+Rs."}
-                        {t.amount}
-                      </strong>
-                      {isAdmin && (
-                        <button
-                          type="button"
-                          className="il-btn"
-                          style={{ padding: "5px 7px" }}
-                          onClick={() =>
-                            requireAdminPin("Delete Ledger Entry", () =>
-                              updateWorkspace((prevWs) => ({
-                                ...prevWs,
-                                treasury: prevWs.treasury.filter((x) => x.id !== t.id),
-                              }))
-                            )
-                          }
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* CHAT TAB */}
-      {tab === "chat" && (
-        <div className="il-card">
-          <div style={{ fontWeight: 800, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
-            <MessageSquare size={16} color="#38bdf8" /> {ws.clubName} Locker-Room Chat
+        {/* CHAT TAB */}
+        {tab === "chat" && (
+          <div className="il-card">
+            <div style={{ fontWeight: 800, marginBottom: 12, display: "flex", alignItems: "center", gap: 6 }}>
+              <MessageSquare size={16} color="#38bdf8" /> {ws.clubName} Locker-Room Chat
+            </div>
+            <div className="il-scroll-box">
+              {ws.messages.length === 0 ? (
+                <div style={{ fontSize: 13, color: "var(--muted)" }}>No messages yet. Start the squad chat!</div>
+              ) : (
+                ws.messages.map((m) => (
+                  <div
+                    key={m.id}
+                    style={{
+                      alignSelf: m.sender === authPlayer.name ? "flex-end" : "flex-start",
+                      maxWidth: "86%",
+                      background: m.sender === authPlayer.name ? "rgba(37,99,235,0.28)" : "rgba(2,6,23,0.75)",
+                      border: "1px solid var(--border)",
+                      padding: "10px 12px",
+                      borderRadius: 12,
+                    }}
+                  >
+                    <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11, marginBottom: 3 }}>
+                      <strong style={{ color: "var(--gold)" }}>{m.sender}</strong>
+                      <span style={{ color: "var(--muted)" }}>{m.timestamp}</span>
+                    </div>
+                    <div style={{ fontSize: 14 }}>{m.text}</div>
+                  </div>
+                ))
+              )}
+              <div ref={chatEndRef} />
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!chatText.trim()) return;
+                updateWorkspace((prevWs) => ({
+                  ...prevWs,
+                  messages: [
+                    ...prevWs.messages,
+                    { id: uid("m"), sender: authPlayer.name, text: chatText.trim(), timestamp: nowTime() },
+                  ],
+                }));
+                setChatText("");
+              }}
+              style={{ display: "flex", gap: 8, marginTop: 12 }}
+            >
+              <input
+                className="il-input"
+                placeholder={"Message as " + authPlayer.name + "..."}
+                value={chatText}
+                onChange={(e) => setChatText(e.target.value)}
+              />
+              <button type="submit" className="il-btn il-btn-primary">
+                <Send size={15} />
+              </button>
+            </form>
           </div>
-          <div className="il-scroll-box">
-            {ws.messages.length === 0 ? (
-              <div style={{ fontSize: 13, color: "var(--muted)" }}>No messages yet. Start the squad chat!</div>
-            ) : (
-              ws.messages.map((m) => (
+        )}
+
+        {/* LEGENDBOT AI TAB */}
+        {tab === "ai" && (
+          <div className="il-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
+                <Bot size={18} color="#a78bfa" /> LegendBot Cricket AI
+              </div>
+              <span className="il-pill" style={{ background: "rgba(167,139,250,0.2)", color: "#ddd6fe" }}>
+                <Sparkles size={12} /> Voice + Intel
+              </span>
+            </div>
+
+            <div className="il-scroll-box">
+              {aiMessages.map((msg) => (
                 <div
-                  key={m.id}
+                  key={msg.id}
                   style={{
-                    alignSelf: m.sender === authPlayer.name ? "flex-end" : "flex-start",
-                    maxWidth: "86%",
-                    background: m.sender === authPlayer.name ? "rgba(37,99,235,0.28)" : "rgba(2,6,23,0.75)",
+                    alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
+                    maxWidth: "88%",
+                    background: msg.role === "user" ? "rgba(37,99,235,0.3)" : "rgba(2,6,23,0.8)",
                     border: "1px solid var(--border)",
                     padding: "10px 12px",
                     borderRadius: 12,
                   }}
                 >
-                  <div style={{ display: "flex", justifyContent: "space-between", gap: 10, fontSize: 11, marginBottom: 3 }}>
-                    <strong style={{ color: "var(--gold)" }}>{m.sender}</strong>
-                    <span style={{ color: "var(--muted)" }}>{m.timestamp}</span>
+                  {msg.layer && (
+                    <div style={{ fontSize: 10, color: "var(--purple)", fontWeight: 800, marginBottom: 3 }}>
+                      {msg.layer}
+                    </div>
+                  )}
+                  <div style={{ fontSize: 14, lineHeight: 1.45 }}>{msg.text}</div>
+                  <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4, textAlign: "right" }}>
+                    {msg.timestamp}
                   </div>
-                  <div style={{ fontSize: 14 }}>{m.text}</div>
                 </div>
-              ))
-            )}
-            <div ref={chatEndRef} />
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!chatText.trim()) return;
-              updateWorkspace((prevWs) => ({
-                ...prevWs,
-                messages: [
-                  ...prevWs.messages,
-                  { id: uid("m"), sender: authPlayer.name, text: chatText.trim(), timestamp: nowTime() },
-                ],
-              }));
-              setChatText("");
-            }}
-            style={{ display: "flex", gap: 8, marginTop: 12 }}
-          >
-            <input
-              className="il-input"
-              placeholder={"Message as " + authPlayer.name + "..."}
-              value={chatText}
-              onChange={(e) => setChatText(e.target.value)}
-            />
-            <button type="submit" className="il-btn il-btn-primary">
-              <Send size={15} />
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* LEGENDBOT AI TAB */}
-      {tab === "ai" && (
-        <div className="il-card">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-            <div style={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 6 }}>
-              <Bot size={18} color="#a78bfa" /> LegendBot Cricket AI
+              ))}
+              {aiLoading && <div style={{ fontSize: 12, color: "var(--cyan)" }}>LegendBot is thinking...</div>}
+              <div ref={aiEndRef} />
             </div>
-            <span className="il-pill" style={{ background: "rgba(167,139,250,0.2)", color: "#ddd6fe" }}>
-              <Sparkles size={12} /> Voice + Intel
-            </span>
-          </div>
 
-          <div className="il-scroll-box">
-            {aiMessages.map((msg) => (
-              <div
-                key={msg.id}
-                style={{
-                  alignSelf: msg.role === "user" ? "flex-end" : "flex-start",
-                  maxWidth: "88%",
-                  background: msg.role === "user" ? "rgba(37,99,235,0.3)" : "rgba(2,6,23,0.8)",
-                  border: "1px solid var(--border)",
-                  padding: "10px 12px",
-                  borderRadius: 12,
-                }}
-              >
-                {msg.layer && (
-                  <div style={{ fontSize: 10, color: "var(--purple)", fontWeight: 800, marginBottom: 3 }}>
-                    {msg.layer}
-                  </div>
-                )}
-                <div style={{ fontSize: 14, lineHeight: 1.45 }}>{msg.text}</div>
-                <div style={{ fontSize: 10, color: "var(--muted)", marginTop: 4, textAlign: "right" }}>
-                  {msg.timestamp}
-                </div>
-              </div>
-            ))}
-            {aiLoading && <div style={{ fontSize: 12, color: "var(--cyan)" }}>LegendBot is thinking...</div>}
-            <div ref={aiEndRef} />
-          </div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
+              {["MVP leader and caps", "Club balance and dues", "Who is IN poll?", "Live score"].map((chip) => (
+                <button
+                  key={chip}
+                  type="button"
+                  className="il-btn"
+                  style={{ padding: "5px 10px", fontSize: 11 }}
+                  onClick={() => void askLegendBot(chip)}
+                >
+                  {chip}
+                </button>
+              ))}
+            </div>
 
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 10 }}>
-            {["Orange and Purple Cap", "Club balance and dues", "Who is IN poll?", "Live score"].map((chip) => (
-              <button
-                key={chip}
-                type="button"
-                className="il-btn"
-                style={{ padding: "5px 10px", fontSize: 11 }}
-                onClick={() => void askLegendBot(chip)}
-              >
-                {chip}
-              </button>
-            ))}
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              void askLegendBot(aiInput);
-            }}
-            style={{ display: "flex", gap: 8, marginTop: 10 }}
-          >
-            <button
-              type="button"
-              className={"il-btn " + (isListening ? "il-btn-danger" : "il-btn-purple")}
-              onClick={toggleVoiceInput}
-              title="Voice Input"
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void askLegendBot(aiInput);
+              }}
+              style={{ display: "flex", gap: 8, marginTop: 10 }}
             >
-              {isListening ? <MicOff size={16} /> : <Mic size={16} />}
-            </button>
-            <input
-              className="il-input"
-              placeholder={isListening ? "Listening..." : "Ask LegendBot anything about cricket..."}
-              value={aiInput}
-              onChange={(e) => setAiInput(e.target.value)}
-            />
-            <button type="submit" disabled={aiLoading} className="il-btn il-btn-primary">
-              <Send size={15} />
-            </button>
-          </form>
-        </div>
-      )}
-
-      {/* SETTINGS TAB */}
-      {tab === "settings" && (
-        <div>
-          <div className="il-card">
-            <div style={{ fontWeight: 800, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
-              <Key size={16} color="#fbbf24" /> Change Your Normal Password
-            </div>
-            <form onSubmit={handleChangeNormalPass} style={{ display: "flex", gap: 8 }}>
+              <button
+                type="button"
+                className={"il-btn " + (isListening ? "il-btn-danger" : "il-btn-purple")}
+                onClick={toggleVoiceInput}
+                title="Voice Input"
+              >
+                {isListening ? <MicOff size={16} /> : <Mic size={16} />}
+              </button>
               <input
                 className="il-input"
-                type="text"
-                placeholder="Enter new normal password"
-                value={newNormalPass}
-                onChange={(e) => setNewNormalPass(e.target.value)}
+                placeholder={isListening ? "Listening..." : "Ask LegendBot anything about cricket..."}
+                value={aiInput}
+                onChange={(e) => setAiInput(e.target.value)}
               />
-              <button type="submit" className="il-btn il-btn-primary">
-                Save
+              <button type="submit" disabled={aiLoading} className="il-btn il-btn-primary">
+                <Send size={15} />
               </button>
             </form>
-            {passNotice && <div style={{ fontSize: 12, color: "var(--emerald)", marginTop: 6 }}>{passNotice}</div>}
           </div>
+        )}
 
-          {isAdmin && (
+        {/* SETTINGS & ADMIN MANAGEMENT TAB */}
+        {tab === "settings" && (
+          <div>
             <div className="il-card">
-              <div style={{ fontWeight: 800, marginBottom: 10 }}>Admin Controls ({ws.clubName})</div>
-              <div style={{ display: "grid", gap: 10 }}>
-                <div>
-                  <label style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700, display: "block", marginBottom: 4 }}>
-                    PINNED ANNOUNCEMENT
-                  </label>
-                  <input
-                    className="il-input"
-                    value={announcementDraft}
-                    onChange={(e) => setAnnouncementDraft(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700, display: "block", marginBottom: 4 }}>
-                    GROUND NAME
-                  </label>
-                  <input
-                    className="il-input"
-                    value={groundNameDraft}
-                    onChange={(e) => setGroundNameDraft(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700, display: "block", marginBottom: 4 }}>
-                    GOOGLE MAPS LINK
-                  </label>
-                  <input
-                    className="il-input"
-                    value={groundUrlDraft}
-                    onChange={(e) => setGroundUrlDraft(e.target.value)}
-                  />
-                </div>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    type="button"
-                    className="il-btn il-btn-gold"
-                    onClick={() =>
-                      requireAdminPin("Save Club Settings", () => {
-                        updateWorkspace((prevWs) => ({
-                          ...prevWs,
-                          announcement: announcementDraft.trim() || prevWs.announcement,
-                          groundName: groundNameDraft.trim() || prevWs.groundName,
-                          groundMapUrl: groundUrlDraft.trim() || prevWs.groundMapUrl,
-                        }));
-                        setSettingsSavedMsg("Settings saved.");
-                      })
-                    }
-                  >
-                    Save Club Settings
-                  </button>
-
-                  <button
-                    type="button"
-                    className="il-btn il-btn-danger"
-                    onClick={() =>
-                      requireAdminPin("Reset ALL Data to Zero", () => {
-                        const fresh = createFreshState();
-                        setState(fresh);
-                        setSettingsSavedMsg("All stats, matches, polls, and funds reset to zero.");
-                      })
-                    }
-                  >
-                    <RotateCcw size={15} /> Reset All Data to Zero
-                  </button>
-                </div>
-
-                {settingsSavedMsg && (
-                  <div style={{ fontSize: 12, color: "var(--emerald)", fontWeight: 700 }}>{settingsSavedMsg}</div>
-                )}
+              <div style={{ fontWeight: 800, marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+                <Key size={16} color="#fbbf24" /> Change Your Normal Password
               </div>
+              <form onSubmit={handleChangeNormalPass} style={{ display: "flex", gap: 8 }}>
+                <input
+                  className="il-input"
+                  type="text"
+                  placeholder="Enter new normal password"
+                  value={newNormalPass}
+                  onChange={(e) => setNewNormalPass(e.target.value)}
+                />
+                <button type="submit" className="il-btn il-btn-primary">
+                  Save
+                </button>
+              </form>
+              {passNotice && <div style={{ fontSize: 12, color: "var(--emerald)", marginTop: 6 }}>{passNotice}</div>}
             </div>
-          )}
+
+            {isAdmin && (
+              <>
+                <div className="il-card">
+                  <div style={{ fontWeight: 900, marginBottom: 10, display: "flex", alignItems: "center", gap: 6, color: "#fbbf24" }}>
+                    <Shield size={16} /> Manage Club Admins
+                  </div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 10 }}>
+                    Promote any squad member to Admin or revoke Admin privileges (Admin PIN required).
+                  </div>
+                  <div style={{ display: "grid", gap: 8 }}>
+                    {allIlPlayers.map((p) => (
+                      <div
+                        key={p.id}
+                        style={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                          padding: "8px 10px",
+                          borderRadius: 12,
+                          background: "rgba(2,6,23,0.74)",
+                        }}
+                      >
+                        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                          <PlayerAvatar playerId={p.id} name={p.name} size={34} rounded />
+                          <div>
+                            <div style={{ fontWeight: 800, fontSize: 13 }}>
+                              {p.name} <span style={{ color: "var(--gold)" }}>#{p.jerseyNo}</span>
+                            </div>
+                            <div style={{ fontSize: 11, color: p.isAdmin ? "#fbbf24" : "var(--muted)" }}>
+                              {p.isAdmin ? "Admin" : "Player"}
+                            </div>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          className={"il-btn " + (p.isAdmin ? "il-btn-danger" : "il-btn-emerald")}
+                          style={{ padding: "6px 10px", fontSize: 11 }}
+                          onClick={() =>
+                            requireAdminPin(
+                              (p.isAdmin ? "Remove Admin from " : "Make Admin: ") + p.name,
+                              () => handleToggleAdminQuick(p.id)
+                            )
+                          }
+                        >
+                          {p.isAdmin ? "Remove Admin" : "Make Admin"}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="il-card">
+                  <div style={{ fontWeight: 800, marginBottom: 10 }}>Club Settings ({ws.clubName})</div>
+                  <div style={{ display: "grid", gap: 10 }}>
+                    <div>
+                      <label style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700, display: "block", marginBottom: 4 }}>
+                        PINNED ANNOUNCEMENT
+                      </label>
+                      <input
+                        className="il-input"
+                        value={announcementDraft}
+                        onChange={(e) => setAnnouncementDraft(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700, display: "block", marginBottom: 4 }}>
+                        GROUND NAME
+                      </label>
+                      <input
+                        className="il-input"
+                        value={groundNameDraft}
+                        onChange={(e) => setGroundNameDraft(e.target.value)}
+                      />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700, display: "block", marginBottom: 4 }}>
+                        GOOGLE MAPS LINK
+                      </label>
+                      <input
+                        className="il-input"
+                        value={groundUrlDraft}
+                        onChange={(e) => setGroundUrlDraft(e.target.value)}
+                      />
+                    </div>
+
+                    <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                      <button
+                        type="button"
+                        className="il-btn il-btn-gold"
+                        onClick={() =>
+                          requireAdminPin("Save Club Settings", () => {
+                            updateWorkspace((prevWs) => ({
+                              ...prevWs,
+                              announcement: announcementDraft.trim() || prevWs.announcement,
+                              groundName: groundNameDraft.trim() || prevWs.groundName,
+                              groundMapUrl: groundUrlDraft.trim() || prevWs.groundMapUrl,
+                            }));
+                            setSettingsSavedMsg("Settings saved.");
+                          })
+                        }
+                      >
+                        Save Club Settings
+                      </button>
+
+                      <button
+                        type="button"
+                        className="il-btn il-btn-danger"
+                        onClick={() =>
+                          requireAdminPin("Reset ALL Data to Zero", () => {
+                            setState(createFreshState());
+                            setSettingsSavedMsg("All stats, matches, polls, and funds reset to zero.");
+                          })
+                        }
+                      >
+                        <RotateCcw size={15} /> Reset All Data to Zero
+                      </button>
+                    </div>
+
+                    {settingsSavedMsg && (
+                      <div style={{ fontSize: 12, color: "var(--emerald)", fontWeight: 700 }}>{settingsSavedMsg}</div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </main>
+
+      {/* END-OF-OVER CHOOSE NEW BOWLER POPUP */}
+      {showNextBowlerModal && lm && (
+        <div className="il-modal-backdrop">
+          <div className="il-modal">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10 }}>
+              <div>
+                <div style={{ fontSize: 11, color: "var(--gold)", fontWeight: 900, letterSpacing: "0.08em" }}>
+                  OVER {Math.floor(lm.balls / 6)} COMPLETE
+                </div>
+                <div style={{ fontSize: 19, fontWeight: 900 }}>Choose New Bowler</div>
+              </div>
+              {!lastOverBowler && (
+                <button type="button" className="il-btn" style={{ padding: 6 }} onClick={() => setShowNextBowlerModal(false)}>
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+
+            <div style={{ fontSize: 12, color: "var(--muted)", marginBottom: 12 }}>
+              Select who will bowl Over {Math.floor(lm.balls / 6) + 1} for {lm.bowlingTeam}:
+            </div>
+
+            <div style={{ display: "grid", gap: 8 }}>
+              {lm.bowlingPlayers.map((name) => {
+                const bw = lm.bowlers[name] || { name, balls: 0, runs: 0, wickets: 0 };
+                const justBowled = Boolean(lastOverBowler && name === lastOverBowler);
+                const matchedPlayer = ws.players.find((p) => p.name === name);
+                return (
+                  <button
+                    key={name}
+                    type="button"
+                    disabled={justBowled && lm.bowlingPlayers.length > 1}
+                    className={"il-btn " + (name === lm.bowler ? "il-btn-primary" : "")}
+                    style={{
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      opacity: justBowled && lm.bowlingPlayers.length > 1 ? 0.45 : 1,
+                    }}
+                    onClick={() => selectNewBowler(name)}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 9 }}>
+                      {matchedPlayer && (
+                        <PlayerAvatar playerId={matchedPlayer.id} name={matchedPlayer.name} size={32} rounded />
+                      )}
+                      <span style={{ textAlign: "left" }}>
+                        <strong style={{ display: "block", fontSize: 13 }}>{name}</strong>
+                        {justBowled && (
+                          <span style={{ fontSize: 10, color: "#fda4af" }}>Bowled previous over</span>
+                        )}
+                      </span>
+                    </span>
+                    <span style={{ fontSize: 12, color: "#fde68a", fontWeight: 800 }}>
+                      {bw.wickets}/{bw.runs} ({formatOvers(bw.balls)} ov)
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 
-      {/* HERO PLAYER PROFILE MODAL */}
+      {/* ADMIN EDIT PLAYER MODAL */}
+      {editingPlayer && (
+        <div className="il-modal-backdrop" onClick={() => setEditingPlayer(null)}>
+          <div className="il-modal" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>Edit Player Details</span>
+              <button type="button" className="il-btn" style={{ padding: 6 }} onClick={() => setEditingPlayer(null)}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditedPlayer} style={{ display: "grid", gap: 10 }}>
+              <div className="il-grid-2">
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>PLAYER NAME</label>
+                  <input
+                    className="il-input"
+                    value={editingPlayer.name}
+                    onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>JERSEY NO (#)</label>
+                  <input
+                    className="il-input"
+                    type="number"
+                    min={0}
+                    max={999}
+                    value={editingPlayer.jerseyNo}
+                    onChange={(e) =>
+                      setEditingPlayer({ ...editingPlayer, jerseyNo: Number(e.target.value) })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="il-grid-2">
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>ROLE</label>
+                  <select
+                    className="il-select"
+                    value={editingPlayer.role}
+                    onChange={(e) =>
+                      setEditingPlayer({ ...editingPlayer, role: e.target.value as PlayerRole })
+                    }
+                  >
+                    <option value="Batsman">Batsman</option>
+                    <option value="Bowler">Bowler</option>
+                    <option value="All-Rounder">All-Rounder</option>
+                    <option value="Wicket-Keeper">Wicket-Keeper</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>AWARD / BADGE</label>
+                  <input
+                    className="il-input"
+                    value={editingPlayer.funAward}
+                    onChange={(e) => setEditingPlayer({ ...editingPlayer, funAward: e.target.value })}
+                  />
+                </div>
+              </div>
+
+              <div className="il-grid-3">
+                <div>
+                  <label style={{ fontSize: 10, color: "#fbbf24", fontWeight: 800 }}>MVP POINTS</label>
+                  <input
+                    className="il-input"
+                    type="number"
+                    min={0}
+                    value={editingPlayer.mvpPoints}
+                    onChange={(e) =>
+                      setEditingPlayer({ ...editingPlayer, mvpPoints: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>RUNS</label>
+                  <input
+                    className="il-input"
+                    type="number"
+                    min={0}
+                    value={editingPlayer.runs}
+                    onChange={(e) =>
+                      setEditingPlayer({ ...editingPlayer, runs: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>WICKETS</label>
+                  <input
+                    className="il-input"
+                    type="number"
+                    min={0}
+                    value={editingPlayer.wickets}
+                    onChange={(e) =>
+                      setEditingPlayer({ ...editingPlayer, wickets: Number(e.target.value) })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div className="il-grid-3">
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>MATCHES</label>
+                  <input
+                    className="il-input"
+                    type="number"
+                    min={0}
+                    value={editingPlayer.matches}
+                    onChange={(e) =>
+                      setEditingPlayer({ ...editingPlayer, matches: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>DUES (Rs.)</label>
+                  <input
+                    className="il-input"
+                    type="number"
+                    min={0}
+                    value={editingPlayer.finesDue}
+                    onChange={(e) =>
+                      setEditingPlayer({ ...editingPlayer, finesDue: Number(e.target.value) })
+                    }
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: 10, color: "var(--muted)", fontWeight: 800 }}>ADVANCE (Rs.)</label>
+                  <input
+                    className="il-input"
+                    type="number"
+                    min={0}
+                    value={editingPlayer.advanceCredit}
+                    onChange={(e) =>
+                      setEditingPlayer({ ...editingPlayer, advanceCredit: Number(e.target.value) })
+                    }
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: 14, padding: "6px 2px", flexWrap: "wrap" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={editingPlayer.isAdmin}
+                    onChange={(e) => setEditingPlayer({ ...editingPlayer, isAdmin: e.target.checked })}
+                  />
+                  Admin Access
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 7, fontSize: 13, fontWeight: 700, cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={editingPlayer.isGM}
+                    onChange={(e) => setEditingPlayer({ ...editingPlayer, isGM: e.target.checked })}
+                  />
+                  Ganesh Mandir Member
+                </label>
+              </div>
+
+              <button type="submit" className="il-btn il-btn-gold" style={{ padding: 12 }}>
+                Save Player Changes
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ADD NEW PLAYER MODAL */}
+      {showAddPlayerModal && (
+        <div className="il-modal-backdrop" onClick={() => setShowAddPlayerModal(false)}>
+          <div className="il-modal" onClick={(e) => e.stopPropagation()}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+              <span style={{ fontWeight: 900, fontSize: 17, color: "#fbbf24" }}>Add New Squad Player</span>
+              <button type="button" className="il-btn" style={{ padding: 6 }} onClick={() => setShowAddPlayerModal(false)}>
+                <X size={16} />
+              </button>
+            </div>
+
+            <form onSubmit={handleAddPlayer} style={{ display: "grid", gap: 10 }}>
+              <input
+                className="il-input"
+                placeholder="Player Full Name"
+                value={addName}
+                onChange={(e) => setAddName(e.target.value)}
+                required
+              />
+              <div className="il-grid-2">
+                <input
+                  className="il-input"
+                  type="number"
+                  min={0}
+                  max={999}
+                  placeholder="Jersey No"
+                  value={addJersey}
+                  onChange={(e) => setAddJersey(e.target.value)}
+                />
+                <select
+                  className="il-select"
+                  value={addRole}
+                  onChange={(e) => setAddRole(e.target.value as PlayerRole)}
+                >
+                  <option value="Batsman">Batsman</option>
+                  <option value="Bowler">Bowler</option>
+                  <option value="All-Rounder">All-Rounder</option>
+                  <option value="Wicket-Keeper">Wicket-Keeper</option>
+                </select>
+              </div>
+              <input
+                className="il-input"
+                placeholder="Login Password (default: Player123)"
+                value={addPass}
+                onChange={(e) => setAddPass(e.target.value)}
+              />
+              <div style={{ display: "flex", gap: 14, padding: "4px 2px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                  <input type="checkbox" checked={addIsAdmin} onChange={(e) => setAddIsAdmin(e.target.checked)} />
+                  Make Admin
+                </label>
+                <label style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13 }}>
+                  <input type="checkbox" checked={addIsGM} onChange={(e) => setAddIsGM(e.target.checked)} />
+                  Ganesh Mandir Member
+                </label>
+              </div>
+              <button type="submit" className="il-btn il-btn-gold" style={{ padding: 12 }}>
+                <UserPlus size={15} /> Add to Squad
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* HERO PLAYER PROFILE & DIGITAL ID CARD MODAL */}
       {selectedProfile && (
         <div className="il-modal-backdrop" onClick={() => setSelectedProfileId("")}>
           <div className="il-modal" style={{ padding: 0 }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ position: "relative" }}>
-              <PlayerPortraitBanner playerId={selectedProfile.id} name={selectedProfile.name} height={240} />
-              <div className="il-fut-fade" />
-              <button
-                type="button"
-                className="il-btn"
-                style={{ position: "absolute", top: 12, right: 12, padding: 7, background: "rgba(2,6,23,0.78)" }}
-                onClick={() => setSelectedProfileId("")}
-              >
-                <X size={16} />
-              </button>
-              <div style={{ position: "absolute", left: 16, right: 16, bottom: 12 }}>
-                <div style={{ fontSize: 11, color: "var(--gold)", fontWeight: 800, textTransform: "uppercase" }}>
-                  {selectedProfile.role} - {selectedProfile.funAward}
+            {profileTab !== "idcard" ? (
+              <div style={{ position: "relative" }}>
+                <PlayerPortraitBanner playerId={selectedProfile.id} name={selectedProfile.name} height={225} />
+                <div className="il-fut-fade" />
+                <div style={{ position: "absolute", top: 14, left: 16, fontSize: 34, fontWeight: 900, color: "#fbbf24", textShadow: "0 2px 12px rgba(0,0,0,0.9)" }}>
+                  {selectedProfile.jerseyNo}
                 </div>
-                <div style={{ fontSize: 24, fontWeight: 900, lineHeight: 1.15 }}>{selectedProfile.name}</div>
+                <button
+                  type="button"
+                  className="il-btn"
+                  style={{ position: "absolute", top: 12, right: 12, padding: 7, background: "rgba(2,6,23,0.78)" }}
+                  onClick={() => setSelectedProfileId("")}
+                >
+                  <X size={16} />
+                </button>
+                <div style={{ position: "absolute", left: 16, right: 16, bottom: 12 }}>
+                  <div style={{ fontSize: 11, color: "var(--gold)", fontWeight: 800, textTransform: "uppercase" }}>
+                    {selectedProfile.role} {selectedProfile.isAdmin ? "• ADMIN" : ""}
+                  </div>
+                  <div style={{ fontSize: 23, fontWeight: 900, lineHeight: 1.15 }}>{selectedProfile.name}</div>
+                </div>
               </div>
-            </div>
+            ) : (
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "14px 16px 0 16px" }}>
+                <span style={{ fontWeight: 900, fontSize: 15, color: "#fbbf24", display: "flex", alignItems: "center", gap: 6 }}>
+                  <CreditCard size={16} /> Digital Player ID
+                </span>
+                <button type="button" className="il-btn" style={{ padding: 6 }} onClick={() => setSelectedProfileId("")}>
+                  <X size={16} />
+                </button>
+              </div>
+            )}
 
             <div style={{ padding: 16 }}>
-              <div className="il-grid-3" style={{ textAlign: "center" }}>
-                <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted)" }}>MATCHES</div>
-                  <div style={{ fontSize: 20, fontWeight: 900 }}>{selectedProfile.matches}</div>
-                </div>
-                <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted)" }}>RUNS</div>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: "var(--cyan)" }}>{selectedProfile.runs}</div>
-                </div>
-                <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted)" }}>WICKETS</div>
-                  <div style={{ fontSize: 20, fontWeight: 900, color: "var(--purple)" }}>{selectedProfile.wickets}</div>
-                </div>
-                <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted)" }}>4s / 6s</div>
-                  <div style={{ fontSize: 16, fontWeight: 900 }}>{selectedProfile.fours} / {selectedProfile.sixes}</div>
-                </div>
-                <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted)" }}>DUES</div>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: "var(--rose)" }}>Rs.{selectedProfile.finesDue}</div>
-                </div>
-                <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
-                  <div style={{ fontSize: 10, color: "var(--muted)" }}>ADVANCE</div>
-                  <div style={{ fontSize: 16, fontWeight: 900, color: "var(--gold)" }}>Rs.{selectedProfile.advanceCredit}</div>
-                </div>
+              <div className="il-grid-4" style={{ marginBottom: 14, gap: 6 }}>
+                {(
+                  [
+                    { id: "idcard", label: "ID Card" },
+                    { id: "stats", label: "Stats" },
+                    { id: "career", label: "Career" },
+                    { id: "awards", label: "Awards" },
+                  ] as const
+                ).map((pt) => (
+                  <button
+                    key={pt.id}
+                    type="button"
+                    className={"il-btn " + (profileTab === pt.id ? "il-btn-gold" : "")}
+                    style={{ padding: "7px 4px", fontSize: 10, textTransform: "uppercase" }}
+                    onClick={() => setProfileTab(pt.id)}
+                  >
+                    {pt.label}
+                  </button>
+                ))}
               </div>
+
+              {profileTab === "idcard" && (
+                <DigitalIdCardView
+                  player={selectedProfile}
+                  clubName={ws.clubName}
+                  wsKey={workspace}
+                />
+              )}
+
+              {profileTab === "stats" && (
+                <div className="il-grid-3" style={{ textAlign: "center" }}>
+                  <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)" }}>MVP PTS</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "#fbbf24" }}>{selectedProfile.mvpPoints}</div>
+                  </div>
+                  <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)" }}>RUNS</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "var(--cyan)" }}>{selectedProfile.runs}</div>
+                  </div>
+                  <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)" }}>WICKETS</div>
+                    <div style={{ fontSize: 20, fontWeight: 900, color: "var(--purple)" }}>{selectedProfile.wickets}</div>
+                  </div>
+                  <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)" }}>MATCHES</div>
+                    <div style={{ fontSize: 18, fontWeight: 900 }}>{selectedProfile.matches}</div>
+                  </div>
+                  <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)" }}>STRIKE RATE</div>
+                    <div style={{ fontSize: 16, fontWeight: 900 }}>
+                      {selectedProfile.ballsFaced > 0
+                        ? ((selectedProfile.runs / selectedProfile.ballsFaced) * 100).toFixed(1)
+                        : "0.0"}
+                    </div>
+                  </div>
+                  <div style={{ background: "rgba(2,6,23,0.78)", padding: 10, borderRadius: 12 }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)" }}>ECONOMY</div>
+                    <div style={{ fontSize: 16, fontWeight: 900 }}>
+                      {selectedProfile.oversBowled > 0
+                        ? (selectedProfile.runsConceded / selectedProfile.oversBowled).toFixed(2)
+                        : "0.00"}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {profileTab === "career" && (
+                <div className="il-grid-2" style={{ textAlign: "center" }}>
+                  <div style={{ background: "rgba(2,6,23,0.78)", padding: 12, borderRadius: 12 }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)" }}>BOUNDARIES</div>
+                    <div style={{ fontSize: 18, fontWeight: 900 }}>
+                      {selectedProfile.fours} Fours • {selectedProfile.sixes} Sixes
+                    </div>
+                  </div>
+                  <div style={{ background: "rgba(2,6,23,0.78)", padding: 12, borderRadius: 12 }}>
+                    <div style={{ fontSize: 10, color: "var(--muted)" }}>CLUB WALLET</div>
+                    <div style={{ fontSize: 14, fontWeight: 900 }}>
+                      Due Rs.{selectedProfile.finesDue} / Adv Rs.{selectedProfile.advanceCredit}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {profileTab === "awards" && (
+                <div style={{ background: "rgba(2,6,23,0.78)", padding: 14, borderRadius: 12, textAlign: "center" }}>
+                  <Award size={28} color="#fbbf24" />
+                  <div style={{ fontWeight: 900, fontSize: 18, marginTop: 6 }}>{selectedProfile.funAward}</div>
+                  <div style={{ fontSize: 12, color: "var(--muted)", marginTop: 4 }}>
+                    Jersey #{selectedProfile.jerseyNo} • {selectedProfile.mvpPoints} Career MVP Points
+                  </div>
+                </div>
+              )}
+
+              {isAdmin && (
+                <button
+                  type="button"
+                  className="il-btn il-btn-gold"
+                  style={{ width: "100%", marginTop: 12 }}
+                  onClick={() => {
+                    const target = { ...selectedProfile };
+                    setSelectedProfileId("");
+                    setEditingPlayer(target);
+                  }}
+                >
+                  <Edit3 size={14} /> Edit Name, Jersey No, Admin & MVP
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -4268,7 +5424,7 @@ export default function App() {
                   .filter((p) => p.isGM)
                   .map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name}
+                      #{p.jerseyNo} {p.name}
                     </option>
                   ))}
               </select>
@@ -4291,8 +5447,8 @@ export default function App() {
         </div>
       )}
 
-      {/* Bottom Navigation */}
-      <nav className="il-nav">
+      {/* Mobile Bottom Navigation */}
+      <nav className="il-mobile-nav">
         <div className="il-nav-inner">
           {navItems.map((item) => (
             <button
