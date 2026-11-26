@@ -269,7 +269,7 @@ interface PieSlice {
 
 const STORAGE_KEY = "indore_legends_pro_v6";
 const ADMIN_PIN = "450718";
-const DEFAULT_LAUNCH_TIME = "2026-11-29T15:00:00+05:30";
+const DEFAULT_LAUNCH_TIME = "2026-11-28T17:00:00+05:30";
 
 const CODE39_MAP: Record<string, string> = {
   "0": "nnnwwnwnn",
