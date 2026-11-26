@@ -5,6 +5,7 @@ import {
   fetchLockerMessages,
   type CloudChatMessage,
 } from "./firebaseChat";
+import { subscribeClubState, saveCloudClubState } from "./clubSync";
 import {
   Home,
   Trophy,
