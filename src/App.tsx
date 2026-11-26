@@ -1362,11 +1362,6 @@ export default function App() {
       timestamp: nowTime(),
     },
   ]);
-  const aiEndRef = useRef<HTMLDivElement | null>(null);
-  const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
-  const lastCloudJsonRef = useRef("");
-  const lastLocalSaveAtRef = useRef(0);
-
     const lastCloudJsonRef = useRef("");
   const lastLocalSaveAtRef = useRef(0);
 
@@ -1441,8 +1436,6 @@ export default function App() {
     );
     return () => unsubscribe();
   }, []);
-
-
 
   useEffect(() => {
     const id = window.setInterval(() => setNowMs(Date.now()), 1000);
