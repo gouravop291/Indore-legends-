@@ -3,22 +3,22 @@ import ReactDOM from "react-dom/client";
 import App from "./App";
 import "./index.css";
 
-const SCHEDULE_ENABLED = true; // Set to false on final launch to keep app open 24/7
+const SCHEDULE_ENABLED = true; // Change to false on final launch to stay open 24/7
 const BYPASS_CODE = "9999001430";
 
-function getIstNow(): Date {
+function getIstNow() {
   const now = new Date();
   const utcMs = now.getTime() + now.getTimezoneOffset() * 60000;
   return new Date(utcMs + 5.5 * 60 * 60 * 1000);
 }
 
-function isAppOpenNow(ist: Date): boolean {
+function isAppOpenNow(ist) {
   const hour = ist.getHours();
   // Live windows: 3:00 PM - 4:00 PM (15:00 - 15:59) and 7:00 PM - 8:00 PM (19:00 - 19:59) IST
   return (hour >= 15 && hour < 16) || (hour >= 19 && hour < 20);
 }
 
-function getNextWindowInfo(ist: Date): { label: string; countdown: string } {
+function getNextWindowInfo(ist) {
   const hour = ist.getHours();
   const min = ist.getMinutes();
   const sec = ist.getSeconds();
@@ -47,12 +47,12 @@ function getNextWindowInfo(ist: Date): { label: string; countdown: string } {
 }
 
 function RootGate() {
-  const [istNow, setIstNow] = useState<Date>(() => getIstNow());
-  const [bypass, setBypass] = useState<boolean>(false);
-  const [taps, setTaps] = useState<number>(0);
-  const [showCodeBox, setShowCodeBox] = useState<boolean>(false);
-  const [codeInput, setCodeInput] = useState<string>("");
-  const [error, setError] = useState<string>("");
+  const [istNow, setIstNow] = useState(() => getIstNow());
+  const [bypass, setBypass] = useState(false);
+  const [taps, setTaps] = useState(0);
+  const [showCodeBox, setShowCodeBox] = useState(false);
+  const [codeInput, setCodeInput] = useState("");
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const timer = window.setInterval(() => {
@@ -81,7 +81,7 @@ function RootGate() {
     }
   };
 
-  const handleUnlock = (e: React.FormEvent) => {
+  const handleUnlock = (e) => {
     e.preventDefault();
     if (codeInput.trim() === BYPASS_CODE) {
       setBypass(true);
@@ -291,7 +291,7 @@ function RootGate() {
   );
 }
 
-ReactDOM.createRoot(document.getElementById("root")!).render(
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <RootGate />
   </React.StrictMode>
