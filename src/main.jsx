@@ -7,11 +7,11 @@ import "./index.css";
 // APP SCHEDULE & LAUNCH CONFIGURATION
 // ==========================================
 const SCHEDULE_ENABLED = true; // Set to false anytime to unlock the app 24/7
-const BYPASS_CODE = "Admin-07"; // Change this to your preferred admin unlock code
+const BYPASS_CODE = "Admin-07"; // Tap the IL badge 5 times and enter this code
 const SECRET_TAPS_REQUIRED = 5;
 
-// Official Launch: December 28, 2026 at 5:00 PM IST
-const LAUNCH_TIMESTAMP = new Date("2026-12-28T17:00:00+05:30").getTime();
+// Official Launch: November 28, 2026 at 5:00 PM IST
+const LAUNCH_TIMESTAMP = new Date("2026-11-28T17:00:00+05:30").getTime();
 
 // Daily Testing Window: 4:00 PM to 8:00 PM IST (16:00 - 19:59)
 const TEST_START_HOUR = 16;
@@ -136,7 +136,7 @@ function RootGate() {
         </div>
 
         <h1 style={styles.title}>INDORE LEGENDS</h1>
-        <p style={styles.subtitle}>Official Launch • Dec 28, 2026 at 5:00 PM IST</p>
+        <p style={styles.subtitle}>Official Launch • Nov 28, 2026 at 5:00 PM IST</p>
 
         {/* Official Launch Countdown */}
         <div style={styles.sectionLabel}>LAUNCH COUNTDOWN</div>
