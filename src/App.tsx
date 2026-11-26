@@ -1253,6 +1253,25 @@ export default function App() {
   const [workspace, setWorkspace] = useState<WorkspaceKey>("il");
   const [gmUnlocked, setGmUnlocked] = useState<boolean>(false);
   const [tab, setTab] = useState<TabKey>("home");
+    const [cloudSyncStatus, setCloudSyncStatus] = useState<string>("Syncing...");
+
+  const serializeForCloud = (next: AppState) => ({
+    customPasswords: next.customPasswords,
+    workspaces: {
+      il: { ...next.workspaces.il, messages: [] },
+      gm: { ...next.workspaces.gm, messages: [] },
+    },
+  });
+
+  const updateSharedState = (updater: (prev: AppState) => AppState) => {
+    setState((prev) => {
+      const next = updater(prev);
+      void saveCloudClubState(serializeForCloud(next), (st) =>
+        setCloudSyncStatus(st)
+      );
+      return next;
+    });
+  };
 
   const [loginPlayerId, setLoginPlayerId] = useState<string>("p1");
   const [loginPassword, setLoginPassword] = useState<string>("");
