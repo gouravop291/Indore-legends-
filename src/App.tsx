@@ -1364,6 +1364,18 @@ export default function App() {
   ]);
   const aiEndRef = useRef<HTMLDivElement | null>(null);
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
+  const lastCloudJsonRef = useRef("");
+  const lastLocalSaveAtRef = useRef(0);
+
+  const stripForCloud = (
+    s: AppState
+  ): Pick<AppState, "customPasswords" | "workspaces"> => ({
+    customPasswords: s.customPasswords,
+    workspaces: {
+      il: { ...s.workspaces.il, messages: [] },
+      gm: { ...s.workspaces.gm, messages: [] },
+    },
+  });
 
   useEffect(() => {
     try {
@@ -1371,13 +1383,25 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
+    const payload = stripForCloud(state);
+    const json = JSON.stringify(payload);
+    if (!lastCloudJsonRef.current) {
+      lastCloudJsonRef.current = json;
+      return;
+    }
+    if (json === lastCloudJsonRef.current) return;
+    lastCloudJsonRef.current = json;
+    lastLocalSaveAtRef.current = Date.now();
+    void saveClubState(payload);
   }, [state]);
-    useEffect(() => {
+
+  useEffect(() => {
     const unsubscribe = subscribeClubState<Pick<AppState, "customPasswords" | "workspaces">>(
       (cloudData) => {
+        if (Date.now() - lastLocalSaveAtRef.current < 3500) return;
         setState((prev) => {
           const fresh = createFreshState();
-          return {
+          const next: AppState = {
             ...prev,
             customPasswords: cloudData.customPasswords || prev.customPasswords,
             workspaces: {
@@ -1393,12 +1417,15 @@ export default function App() {
               },
             },
           };
+          lastCloudJsonRef.current = JSON.stringify(stripForCloud(next));
+          return next;
         });
       },
       (st) => setCloudSyncStatus(st)
     );
     return () => unsubscribe();
   }, []);
+
 
   useEffect(() => {
     const id = window.setInterval(() => setNowMs(Date.now()), 1000);
