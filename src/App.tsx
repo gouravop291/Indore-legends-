@@ -1367,13 +1367,16 @@ export default function App() {
   const lastCloudJsonRef = useRef("");
   const lastLocalSaveAtRef = useRef(0);
 
+    const lastCloudJsonRef = useRef("");
+  const lastLocalSaveAtRef = useRef(0);
+
   const stripForCloud = (
     s: AppState
   ): Pick<AppState, "customPasswords" | "workspaces"> => ({
-    customPasswords: s.customPasswords,
+    customPasswords: s?.customPasswords || {},
     workspaces: {
-      il: { ...s.workspaces.il, messages: [] },
-      gm: { ...s.workspaces.gm, messages: [] },
+      il: { ...(s?.workspaces?.il || {}), messages: [] },
+      gm: { ...(s?.workspaces?.gm || {}), messages: [] },
     },
   });
 
@@ -1383,48 +1386,62 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
-    const payload = stripForCloud(state);
-    const json = JSON.stringify(payload);
-    if (!lastCloudJsonRef.current) {
+    try {
+      const payload = stripForCloud(state);
+      const json = JSON.stringify(payload);
+      if (!lastCloudJsonRef.current) {
+        lastCloudJsonRef.current = json;
+        return;
+      }
+      if (json === lastCloudJsonRef.current) return;
       lastCloudJsonRef.current = json;
-      return;
+      lastLocalSaveAtRef.current = Date.now();
+      void saveClubState(payload);
+    } catch {
+      // Ignore sync serialization errors
     }
-    if (json === lastCloudJsonRef.current) return;
-    lastCloudJsonRef.current = json;
-    lastLocalSaveAtRef.current = Date.now();
-    void saveClubState(payload);
   }, [state]);
 
   useEffect(() => {
     const unsubscribe = subscribeClubState<Pick<AppState, "customPasswords" | "workspaces">>(
       (cloudData) => {
+        if (!cloudData || typeof cloudData !== "object") return;
         if (Date.now() - lastLocalSaveAtRef.current < 3500) return;
         setState((prev) => {
-          const fresh = createFreshState();
-          const next: AppState = {
-            ...prev,
-            customPasswords: cloudData.customPasswords || prev.customPasswords,
-            workspaces: {
-              il: {
-                ...fresh.workspaces.il,
-                ...(cloudData.workspaces?.il || prev.workspaces.il),
-                messages: prev.workspaces.il.messages,
+          try {
+            return {
+              ...prev,
+              customPasswords: cloudData.customPasswords ?? prev.customPasswords,
+              workspaces: {
+                ...prev.workspaces,
+                il: {
+                  ...prev.workspaces.il,
+                  ...(cloudData.workspaces?.il ? {
+                    ...cloudData.workspaces.il,
+                    players: cloudData.workspaces.il.players || prev.workspaces.il.players,
+                    messages: prev.workspaces.il.messages || [],
+                  } : {}),
+                },
+                gm: {
+                  ...prev.workspaces.gm,
+                  ...(cloudData.workspaces?.gm ? {
+                    ...cloudData.workspaces.gm,
+                    players: cloudData.workspaces.gm.players || prev.workspaces.gm.players,
+                    messages: prev.workspaces.gm.messages || [],
+                  } : {}),
+                },
               },
-              gm: {
-                ...fresh.workspaces.gm,
-                ...(cloudData.workspaces?.gm || prev.workspaces.gm),
-                messages: prev.workspaces.gm.messages,
-              },
-            },
-          };
-          lastCloudJsonRef.current = JSON.stringify(stripForCloud(next));
-          return next;
+            };
+          } catch {
+            return prev;
+          }
         });
       },
       (st) => setCloudSyncStatus(st)
     );
     return () => unsubscribe();
   }, []);
+
 
 
   useEffect(() => {
