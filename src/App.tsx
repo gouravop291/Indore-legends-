@@ -1372,6 +1372,33 @@ export default function App() {
       // Ignore storage errors
     }
   }, [state]);
+    useEffect(() => {
+    const unsubscribe = subscribeClubState<Pick<AppState, "customPasswords" | "workspaces">>(
+      (cloudData) => {
+        setState((prev) => {
+          const fresh = createFreshState();
+          return {
+            ...prev,
+            customPasswords: cloudData.customPasswords || prev.customPasswords,
+            workspaces: {
+              il: {
+                ...fresh.workspaces.il,
+                ...(cloudData.workspaces?.il || prev.workspaces.il),
+                messages: prev.workspaces.il.messages,
+              },
+              gm: {
+                ...fresh.workspaces.gm,
+                ...(cloudData.workspaces?.gm || prev.workspaces.gm),
+                messages: prev.workspaces.gm.messages,
+              },
+            },
+          };
+        });
+      },
+      (st) => setCloudSyncStatus(st)
+    );
+    return () => unsubscribe();
+  }, []);
 
   useEffect(() => {
     const id = window.setInterval(() => setNowMs(Date.now()), 1000);
