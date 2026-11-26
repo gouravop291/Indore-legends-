@@ -14,8 +14,8 @@ function getIstNow() {
 
 function isAppOpenNow(ist) {
   const hour = ist.getHours();
-  // Live windows: 3:00 PM - 4:00 PM (15:00 - 15:59) and 7:00 PM - 8:00 PM (19:00 - 19:59) IST
-  return (hour >= 15 && hour < 16) || (hour >= 19 && hour < 20);
+  // Open continuously from 4:00 PM (16:00) to 8:00 PM (20:00) IST
+  return hour >= 16 && hour < 20;
 }
 
 function getNextWindowInfo(ist) {
@@ -24,19 +24,40 @@ function getNextWindowInfo(ist) {
   const sec = ist.getSeconds();
   const currentSeconds = hour * 3600 + min * 60 + sec;
 
-  let targetSeconds = 15 * 3600;
-  let label = "Today at 3:00 PM IST";
+  let targetSeconds = 16 * 3600;
+  let label = "Today at 4:00 PM IST";
 
-  if (hour < 15) {
-    targetSeconds = 15 * 3600;
-    label = "Today at 3:00 PM IST";
-  } else if (hour >= 16 && hour < 19) {
-    targetSeconds = 19 * 3600;
-    label = "Today at 7:00 PM IST";
+  if (hour < 16) {
+    targetSeconds = 16 * 3600;
+    label = "Today at 4:00 PM IST";
   } else {
-    targetSeconds = 24 * 3600 + 15 * 3600;
-    label = "Tomorrow at 3:00 PM IST";
+    targetSeconds = 24 * 3600 + 16 * 3600;
+    label = "Tomorrow at 4:00 PM IST";
   }
+
+  const diff = Math.max(0, targetSeconds - currentSeconds);
+  const h = String(Math.floor(diff / 3600)).padStart(2, "0");
+  const m = String(Math.floor((diff % 3600) / 60)).padStart(2, "0");
+  const s = String(diff % 60).padStart(2, "0");
+
+  return { label, countdown: h + ":" + m + ":" + s };
+}
+
+function getLaunchCountdown(ist) {
+  const diffMs = Math.max(0, LAUNCH_DATE_IST.getTime() - ist.getTime());
+  const totalSeconds = Math.floor(diffMs / 1000);
+
+  const days = String(Math.floor(totalSeconds / 86400)).padStart(2, "0");
+  const hours = String(Math.floor((totalSeconds % 86400) / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((totalSeconds % 3600) / 60)).padStart(2, "0");
+  const seconds = String(totalSeconds % 60).padStart(2, "0");
+
+  return {
+    label: "Official Launch: Dec 28, 2026 at 5:00 PM IST",
+    countdown: `${days}d : ${hours}h : ${minutes}m : ${seconds}s`,
+    isLaunched: diffMs === 0,
+  };
+}
 
   const diff = Math.max(0, targetSeconds - currentSeconds);
   const h = String(Math.floor(diff / 3600)).padStart(2, "0");
