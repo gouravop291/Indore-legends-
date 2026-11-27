@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.indore_legends.twa",
+        "sha256_cert_fingerprints": ["C7:77:A5:82:0C:9A:87:DD:E6:DC:A0:98:F1:3A:05:B6:5A:0D:D5:0C:95:17:E2:D4:44:0B:B7:7D:97:F5:2A:80"]
+      }
+    }]
