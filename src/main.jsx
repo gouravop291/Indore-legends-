@@ -16,7 +16,7 @@ if ("serviceWorker" in navigator) {
 // ==========================================
 // APP SCHEDULE & LAUNCH CONFIGURATION
 // ==========================================
-const SCHEDULE_ENABLED = true; // Set to false anytime to unlock the app 24/7
+const SCHEDULE_ENABLED = false; // Set to false anytime to unlock the app 24/7
 const BYPASS_CODE = "Admin-07"; // Tap the IL badge 5 times and enter this code
 const SECRET_TAPS_REQUIRED = 5;
 
